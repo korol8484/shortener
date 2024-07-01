@@ -1,7 +1,7 @@
 package app
 
 type Entity struct {
-	Url   string
+	URL   string
 	Alias string
 }
 

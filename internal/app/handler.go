@@ -10,15 +10,15 @@ import (
 	"time"
 )
 
-type Api struct {
+type API struct {
 	store Store
 }
 
-func NewApi(store Store) *Api {
-	return &Api{store: store}
+func NewAPI(store Store) *API {
+	return &API{store: store}
 }
 
-func (a *Api) HandleShort(w http.ResponseWriter, r *http.Request) {
+func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		// разрешаем только POST-запросы
 		w.WriteHeader(http.StatusBadRequest)
@@ -31,14 +31,14 @@ func (a *Api) HandleShort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parsedUrl, err := url.Parse(string(body))
+	parsedURL, err := url.Parse(string(body))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	ent := &Entity{
-		Url:   parsedUrl.String(),
+		URL:   parsedURL.String(),
 		Alias: a.genAlias(6),
 	}
 
@@ -53,7 +53,7 @@ func (a *Api) HandleShort(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("http://%s/%s", r.Host, ent.Alias)))
 }
 
-func (a *Api) HandleRedirect(w http.ResponseWriter, r *http.Request) {
+func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		// разрешаем только GET-запросы
 		w.WriteHeader(http.StatusBadRequest)
@@ -75,10 +75,10 @@ func (a *Api) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, ent.Url, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, ent.URL, http.StatusTemporaryRedirect)
 }
 
-func (a *Api) genAlias(keyLen int) string {
+func (a *API) genAlias(keyLen int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -14,17 +13,17 @@ func NewMemStore() Store {
 }
 
 func (m *MemStore) Add(ent *Entity) error {
-	m.items[ent.Alias] = ent.Url
+	m.items[ent.Alias] = ent.URL
 
 	return nil
 }
 
 func (m *MemStore) Read(alias string) (*Entity, error) {
 	if !m.hasAlias(alias) {
-		return nil, errors.New(fmt.Sprintf("can't find requested alias %s", alias))
+		return nil, fmt.Errorf("can't find requested alias %s", alias)
 	}
 
-	return &Entity{Alias: alias, Url: m.items[alias]}, nil
+	return &Entity{Alias: alias, URL: m.items[alias]}, nil
 }
 
 func (m *MemStore) hasAlias(alias string) bool {

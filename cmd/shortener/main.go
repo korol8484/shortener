@@ -13,7 +13,7 @@ func main() {
 
 func run() error {
 	store := app.NewMemStore()
-	api := app.NewApi(store)
+	api := app.NewAPI(store)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(`/{id}`, api.HandleRedirect)
