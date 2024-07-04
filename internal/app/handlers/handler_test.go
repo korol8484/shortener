@@ -54,10 +54,8 @@ func TestAPI_HandleShort(t *testing.T) {
 			// проверяем код ответа
 			assert.Equal(t, test.want.code, res.StatusCode)
 
-			defer func(Body io.ReadCloser) {
-				_ = Body.Close()
-			}(res.Body)
 			resBody, err := io.ReadAll(res.Body)
+			_ = res.Body.Close()
 
 			require.NoError(t, err)
 
@@ -129,6 +127,8 @@ func TestAPI_HandleRedirect(t *testing.T) {
 			// проверяем код ответа
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.expectedURL, res.Header.Get("Location"))
+
+			_ = res.Body.Close()
 		})
 	}
 }
