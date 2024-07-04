@@ -1,7 +1,8 @@
-package app
+package handlers
 
 import (
 	"fmt"
+	"github.com/korol8484/shortener/internal/app"
 	"io"
 	"math/rand"
 	"net/http"
@@ -11,10 +12,10 @@ import (
 )
 
 type API struct {
-	store Store
+	store app.Store
 }
 
-func NewAPI(store Store) *API {
+func NewAPI(store app.Store) *API {
 	return &API{store: store}
 }
 
@@ -37,7 +38,7 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ent := &Entity{
+	ent := &app.Entity{
 		URL:   parsedURL.String(),
 		Alias: a.genAlias(6),
 	}
@@ -60,14 +61,14 @@ func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.RequestURI == "" {
+	if r.URL.Path == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// panic for invalid regex
 	re := regexp.MustCompile(`[^a-zA-Z0-9]`)
-	alias := re.ReplaceAllString(r.RequestURI, "")
+	alias := re.ReplaceAllString(r.URL.Path, "")
 
 	ent, err := a.store.Read(alias)
 	if err != nil {

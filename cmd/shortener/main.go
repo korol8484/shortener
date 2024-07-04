@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/korol8484/shortener/internal/app"
+	"github.com/korol8484/shortener/internal/app/handlers"
+	"github.com/korol8484/shortener/internal/app/storage"
 	"net/http"
 )
 
@@ -12,8 +13,8 @@ func main() {
 }
 
 func run() error {
-	store := app.NewMemStore()
-	api := app.NewAPI(store)
+	store := storage.NewMemStore()
+	api := handlers.NewAPI(store)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(`/{id}`, api.HandleRedirect)
