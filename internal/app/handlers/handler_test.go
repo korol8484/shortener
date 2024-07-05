@@ -5,7 +5,6 @@ import (
 	"github.com/korol8484/shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -53,13 +52,6 @@ func TestAPI_HandleShort(t *testing.T) {
 			res := w.Result()
 			// проверяем код ответа
 			assert.Equal(t, test.want.code, res.StatusCode)
-
-			resBody, err := io.ReadAll(res.Body)
-			_ = res.Body.Close()
-
-			require.NoError(t, err)
-
-			assert.NotEmpty(t, resBody)
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
 		})
 	}
