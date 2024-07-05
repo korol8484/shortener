@@ -53,6 +53,8 @@ func TestAPI_HandleShort(t *testing.T) {
 			// проверяем код ответа
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+
+			_ = res.Body.Close()
 		})
 	}
 }
