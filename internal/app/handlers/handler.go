@@ -2,30 +2,25 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/korol8484/shortener/internal/app"
+	"github.com/go-chi/chi/v5"
+	"github.com/korol8484/shortener/internal/app/domain"
+	"github.com/korol8484/shortener/internal/app/storage"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"regexp"
 	"time"
 )
 
 type API struct {
-	store app.Store
+	store storage.Store
 }
 
-func NewAPI(store app.Store) *API {
+func NewAPI(store storage.Store) *API {
 	return &API{store: store}
 }
 
 func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		// разрешаем только POST-запросы
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -38,7 +33,7 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ent := &app.Entity{
+	ent := &domain.Entity{
 		URL:   parsedURL.String(),
 		Alias: a.genAlias(6),
 	}
@@ -55,20 +50,12 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		// разрешаем только GET-запросы
+	alias := chi.URLParam(r, "id")
+
+	if alias == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	if r.URL.Path == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	// panic for invalid regex
-	re := regexp.MustCompile(`[^a-zA-Z0-9]`)
-	alias := re.ReplaceAllString(r.URL.Path, "")
 
 	ent, err := a.store.Read(alias)
 	if err != nil {

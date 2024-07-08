@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	"github.com/korol8484/shortener/internal/app"
+	"github.com/go-chi/chi/v5"
+	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,7 @@ func TestAPI_HandleShort(t *testing.T) {
 		}},
 		{name: "not post", want: want{
 			method: http.MethodGet,
-			code:   400,
+			code:   405,
 		}},
 		{name: "invalid url", want: want{
 			method: http.MethodPost,
@@ -43,18 +44,26 @@ func TestAPI_HandleShort(t *testing.T) {
 
 	api := NewAPI(storage.NewMemStore())
 
+	router := chi.NewRouter()
+	router.Post("/", api.HandleShort)
+
+	srv := httptest.NewServer(router)
+	defer srv.Close()
+
+	client := &http.Client{}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(test.want.method, "http://localhost:8080/", strings.NewReader(test.want.body))
-			w := httptest.NewRecorder()
-			api.HandleShort(w, request)
+			req, err := http.NewRequest(test.want.method, srv.URL+"/", strings.NewReader(test.want.body))
+			require.NoError(t, err)
 
-			res := w.Result()
-			// проверяем код ответа
+			defer req.Body.Close()
+
+			res, err := client.Do(req)
+			require.NoError(t, err)
+
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
-
-			_ = res.Body.Close()
 		})
 	}
 }
@@ -62,11 +71,23 @@ func TestAPI_HandleShort(t *testing.T) {
 func TestAPI_HandleRedirect(t *testing.T) {
 	api := NewAPI(storage.NewMemStore())
 
-	err := api.store.Add(&app.Entity{
+	err := api.store.Add(&domain.Entity{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
 	require.NoError(t, err)
+
+	router := chi.NewRouter()
+	router.Get("/{id}", api.HandleRedirect)
+
+	srv := httptest.NewServer(router)
+	defer srv.Close()
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 
 	type want struct {
 		code        int
@@ -91,7 +112,7 @@ func TestAPI_HandleRedirect(t *testing.T) {
 		{
 			name: "error bad method",
 			want: want{
-				code:        http.StatusBadRequest,
+				code:        http.StatusMethodNotAllowed,
 				method:      http.MethodPost,
 				expectedURL: "",
 				alias:       "7A2S4z",
@@ -101,7 +122,7 @@ func TestAPI_HandleRedirect(t *testing.T) {
 			name: "alias not found",
 			want: want{
 				code:        http.StatusBadRequest,
-				method:      http.MethodPost,
+				method:      http.MethodGet,
 				expectedURL: "",
 				alias:       "111111",
 			},
@@ -110,19 +131,17 @@ func TestAPI_HandleRedirect(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			path, err := url.JoinPath("http://localhost:8080", test.want.alias)
+			path, err := url.JoinPath(srv.URL, test.want.alias)
 			require.NoError(t, err)
 
-			request := httptest.NewRequest(test.want.method, path, nil)
-			w := httptest.NewRecorder()
-			api.HandleRedirect(w, request)
+			req, err := http.NewRequest(test.want.method, path, nil)
+			require.NoError(t, err)
 
-			res := w.Result()
-			// проверяем код ответа
+			res, err := client.Do(req)
+			require.NoError(t, err)
+
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.expectedURL, res.Header.Get("Location"))
-
-			_ = res.Body.Close()
 		})
 	}
 }

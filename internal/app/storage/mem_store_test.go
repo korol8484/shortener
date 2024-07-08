@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/korol8484/shortener/internal/app"
+	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -9,7 +9,7 @@ import (
 
 func TestMemStore_Add(t *testing.T) {
 	store := NewMemStore()
-	err := store.Add(&app.Entity{
+	err := store.Add(&domain.Entity{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
@@ -24,7 +24,7 @@ func TestMemStore_Read(t *testing.T) {
 	}
 
 	store := NewMemStore()
-	err := store.Add(&app.Entity{
+	err := store.Add(&domain.Entity{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
