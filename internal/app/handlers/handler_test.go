@@ -62,6 +62,8 @@ func TestAPI_HandleShort(t *testing.T) {
 			res, err := client.Do(req)
 			require.NoError(t, err)
 
+			defer res.Body.Close()
+
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
 		})
@@ -139,6 +141,8 @@ func TestAPI_HandleRedirect(t *testing.T) {
 
 			res, err := client.Do(req)
 			require.NoError(t, err)
+
+			defer res.Body.Close()
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.expectedURL, res.Header.Get("Location"))
