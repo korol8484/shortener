@@ -1,8 +1,8 @@
 package config
 
 type App struct {
-	Listen       string
-	BaseShortURL string
+	Listen       string `env:"SERVER_ADDRESS"`
+	BaseShortURL string `env:"BASE_URL"`
 }
 
 func (a *App) GetBaseShortURL() string {

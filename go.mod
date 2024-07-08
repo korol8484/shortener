@@ -5,6 +5,7 @@ go 1.22.0
 require github.com/stretchr/testify v1.9.0
 
 require (
+	github.com/caarlos0/env/v11 v11.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-chi/chi/v5 v5.1.0 // indirect
 	github.com/go-resty/resty/v2 v2.13.1 // indirect
