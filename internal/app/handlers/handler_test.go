@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
+	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
@@ -42,13 +43,12 @@ func TestAPI_HandleShort(t *testing.T) {
 		}},
 	}
 
-	api := NewAPI(storage.NewMemStore())
-
 	router := chi.NewRouter()
-	router.Post("/", api.HandleShort)
-
 	srv := httptest.NewServer(router)
 	defer srv.Close()
+
+	api := NewAPI(storage.NewMemStore(), &config.App{BaseShortURL: srv.URL})
+	router.Post("/", api.HandleShort)
 
 	client := &http.Client{}
 
@@ -71,19 +71,18 @@ func TestAPI_HandleShort(t *testing.T) {
 }
 
 func TestAPI_HandleRedirect(t *testing.T) {
-	api := NewAPI(storage.NewMemStore())
+	router := chi.NewRouter()
+	srv := httptest.NewServer(router)
+	defer srv.Close()
+
+	api := NewAPI(storage.NewMemStore(), &config.App{BaseShortURL: srv.URL})
+	router.Get("/{id}", api.HandleRedirect)
 
 	err := api.store.Add(&domain.Entity{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
 	require.NoError(t, err)
-
-	router := chi.NewRouter()
-	router.Get("/{id}", api.HandleRedirect)
-
-	srv := httptest.NewServer(router)
-	defer srv.Close()
 
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {

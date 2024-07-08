@@ -14,10 +14,11 @@ import (
 
 type API struct {
 	store storage.Store
+	cfg   Config
 }
 
-func NewAPI(store storage.Store) *API {
-	return &API{store: store}
+func NewAPI(store storage.Store, cfg Config) *API {
+	return &API{store: store, cfg: cfg}
 }
 
 func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +47,7 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("content-type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(fmt.Sprintf("http://%s/%s", r.Host, ent.Alias)))
+	w.Write([]byte(fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)))
 }
 
 func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
