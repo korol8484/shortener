@@ -16,7 +16,7 @@ import (
 func main() {
 	cfg := &config.App{}
 
-	flag.StringVar(&cfg.Listen, "a", ":8081", "Http service list addr")
+	flag.StringVar(&cfg.Listen, "a", ":8080", "Http service list addr")
 	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
 	flag.Parse()
 

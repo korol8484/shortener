@@ -44,7 +44,7 @@ func TestMemStore_Read(t *testing.T) {
 		{
 			name: "Alias_not_found",
 			want: want{
-				err:   NotFound,
+				err:   ErrNotFound,
 				alias: "7A2S",
 			},
 		},

@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	// NotFound - Ошибка что запрошенные данные не найдены
-	NotFound = errors.New("can't find requested alias")
+	// ErrNotFound - Ошибка что запрошенные данные не найдены
+	ErrNotFound = errors.New("can't find requested alias")
 )
 
 type MemStore struct {
@@ -34,7 +34,7 @@ func (m *MemStore) Read(alias string) (*domain.URL, error) {
 	defer m.mu.RUnlock()
 
 	if !m.hasAlias(alias) {
-		return nil, NotFound
+		return nil, ErrNotFound
 	}
 
 	return &domain.URL{Alias: alias, URL: m.items[alias]}, nil
