@@ -9,7 +9,7 @@ import (
 
 func TestMemStore_Add(t *testing.T) {
 	store := NewMemStore()
-	err := store.Add(&domain.Entity{
+	err := store.Add(&domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
@@ -20,11 +20,11 @@ func TestMemStore_Read(t *testing.T) {
 	type want struct {
 		alias string
 		url   string
-		err   bool
+		err   error
 	}
 
 	store := NewMemStore()
-	err := store.Add(&domain.Entity{
+	err := store.Add(&domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
@@ -35,16 +35,16 @@ func TestMemStore_Read(t *testing.T) {
 		want want
 	}{
 		{
-			name: "Success",
+			name: "Success_Read_by_alias",
 			want: want{
 				alias: "7A2S4z",
 				url:   "http://www.ya.ru",
 			},
 		},
 		{
-			name: "Success",
+			name: "Alias_not_found",
 			want: want{
-				err:   true,
+				err:   NotFound,
 				alias: "7A2S",
 			},
 		},
@@ -53,12 +53,13 @@ func TestMemStore_Read(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ent, err := store.Read(test.want.alias)
-			if !test.want.err {
+			if test.want.err == nil {
 				require.NoError(t, err)
 				assert.Equal(t, test.want.url, ent.URL)
 				assert.Equal(t, test.want.alias, ent.Alias)
 			} else {
 				assert.Error(t, err)
+				assert.ErrorIs(t, test.want.err, err)
 			}
 		})
 	}

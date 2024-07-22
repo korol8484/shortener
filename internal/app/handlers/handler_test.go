@@ -26,17 +26,17 @@ func TestAPI_HandleShort(t *testing.T) {
 		name string
 		want want
 	}{
-		{name: "success ya", want: want{
+		{name: "success_ya", want: want{
 			method:      http.MethodPost,
 			code:        201,
 			contentType: "text/plain; charset=utf-8",
 			body:        "http://www.ya.ru",
 		}},
-		{name: "not post", want: want{
+		{name: "not_post_request", want: want{
 			method: http.MethodGet,
 			code:   405,
 		}},
-		{name: "invalid url", want: want{
+		{name: "invalid_url_in_request", want: want{
 			method: http.MethodPost,
 			code:   400,
 			body:   "http__://www.ya.ru",
@@ -78,7 +78,7 @@ func TestAPI_HandleRedirect(t *testing.T) {
 	api := NewAPI(storage.NewMemStore(), &config.App{BaseShortURL: srv.URL})
 	router.Get("/{id}", api.HandleRedirect)
 
-	err := api.store.Add(&domain.Entity{
+	err := api.store.Add(&domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})

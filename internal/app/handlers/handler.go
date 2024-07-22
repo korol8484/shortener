@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+type Config interface {
+	GetBaseShortURL() string
+}
+
 type API struct {
 	store storage.Store
 	cfg   Config
@@ -28,13 +32,18 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// по сути лишнее, закрывается в net/http
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(r.Body)
+
 	parsedURL, err := url.Parse(string(body))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	ent := &domain.Entity{
+	ent := &domain.URL{
 		URL:   parsedURL.String(),
 		Alias: a.genAlias(6),
 	}

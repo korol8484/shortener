@@ -1,6 +1,6 @@
 package domain
 
-type Entity struct {
+type URL struct {
 	URL   string
 	Alias string
 }
