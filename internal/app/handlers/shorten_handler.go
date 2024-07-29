@@ -8,16 +8,16 @@ import (
 )
 
 type request struct {
-	Url string `json:"url"`
+	URL string `json:"url"`
 }
 
 type response struct {
 	Result string `json:"result"`
 }
 
-func (a *API) ShortenJson(w http.ResponseWriter, r *http.Request) {
+func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 	cT := filterContentType(r.Header.Get("Content-Type"))
-	if cT != mimeJson {
+	if cT != mimeJSON {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -40,7 +40,7 @@ func (a *API) ShortenJson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ent, err := a.shortUrl(req.Url)
+	ent, err := a.shortURL(req.URL)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -54,7 +54,7 @@ func (a *API) ShortenJson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("content-type", mimeJson)
+	w.Header().Set("content-type", mimeJSON)
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write(b)
 }

@@ -23,7 +23,7 @@ func CreateRouter(
 
 	r.Post("/", api.HandleShort)
 	r.Get("/{id}", api.HandleRedirect)
-	r.Post("/api/shorten", api.ShortenJson)
+	r.Post("/api/shorten", api.ShortenJSON)
 
 	return r
 }

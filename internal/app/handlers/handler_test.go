@@ -156,7 +156,7 @@ func TestAPI_ShortenJson(t *testing.T) {
 	defer srv.Close()
 
 	api := NewAPI(storage.NewMemStore(), &config.App{BaseShortURL: srv.URL})
-	router.Post("/json", api.ShortenJson)
+	router.Post("/json", api.ShortenJSON)
 
 	client := &http.Client{}
 

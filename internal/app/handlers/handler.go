@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	mimeJson  = "application/json"
+	mimeJSON  = "application/json"
 	mimePlain = "text/plain"
 )
 
@@ -48,7 +48,7 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		_ = Body.Close()
 	}(r.Body)
 
-	ent, err := a.shortUrl(string(body))
+	ent, err := a.shortURL(string(body))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -89,8 +89,8 @@ func (a *API) genAlias(keyLen int) string {
 	return string(keyMap)
 }
 
-func (a *API) shortUrl(shortUrl string) (*domain.URL, error) {
-	parsedURL, err := url.Parse(shortUrl)
+func (a *API) shortURL(shortURL string) (*domain.URL, error) {
+	parsedURL, err := url.Parse(shortURL)
 	if err != nil {
 		return nil, err
 	}
