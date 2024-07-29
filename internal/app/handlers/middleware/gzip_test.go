@@ -83,6 +83,8 @@ func TestCompressor(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			resp, respString := testRequestWithAcceptedEncodings(t, ts, "GET", tc.path, tc.acceptedEncodings...)
+			defer resp.Body.Close()
+
 			assert.Equal(t, tc.responseBody, respString)
 			assert.Equal(t, tc.expectedEncoding, resp.Header.Get("Content-Encoding"))
 		})
@@ -107,7 +109,6 @@ func testRequestWithAcceptedEncodings(t *testing.T, ts *httptest.Server, method,
 	}
 
 	respBody := decodeResponseBody(t, resp)
-	defer resp.Body.Close()
 
 	return resp, respBody
 }
