@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+const (
+	mimeJson  = "application/json"
+	mimePlain = "text/plain"
+)
+
 type Config interface {
 	GetBaseShortURL() string
 }
@@ -26,6 +31,12 @@ func NewAPI(store storage.Store, cfg Config) *API {
 }
 
 func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
+	cT := filterContentType(r.Header.Get("Content-Type"))
+	if cT != mimePlain {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -37,18 +48,7 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		_ = Body.Close()
 	}(r.Body)
 
-	parsedURL, err := url.Parse(string(body))
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	ent := &domain.URL{
-		URL:   parsedURL.String(),
-		Alias: a.genAlias(6),
-	}
-
-	err = a.store.Add(ent)
+	ent, err := a.shortUrl(string(body))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -87,4 +87,31 @@ func (a *API) genAlias(keyLen int) string {
 	}
 
 	return string(keyMap)
+}
+
+func (a *API) shortUrl(shortUrl string) (*domain.URL, error) {
+	parsedURL, err := url.Parse(shortUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	ent := &domain.URL{
+		URL:   parsedURL.String(),
+		Alias: a.genAlias(6),
+	}
+
+	if err = a.store.Add(ent); err != nil {
+		return nil, err
+	}
+
+	return ent, nil
+}
+
+func filterContentType(content string) string {
+	for i, char := range content {
+		if char == ' ' || char == ';' {
+			return content[:i]
+		}
+	}
+	return content
 }
