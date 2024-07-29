@@ -5,7 +5,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage"
-	"github.com/korol8484/shortener/internal/app/util"
 	"io"
 	"math/rand"
 	"net/http"
@@ -32,12 +31,6 @@ func NewAPI(store storage.Store, cfg Config) *API {
 }
 
 func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
-	cT := util.FilterContentType(r.Header.Get("Content-Type"))
-	if cT != mimePlain {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
