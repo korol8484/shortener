@@ -22,7 +22,7 @@ type Config interface {
 }
 
 type storeEntity struct {
-	Uuid  string `json:"uuid"`
+	UUID  string `json:"uuid"`
 	Alias string `json:"short_url"`
 	URL   string `json:"original_url"`
 }
@@ -104,7 +104,7 @@ func (m *MemStore) Close() error {
 
 func (m *MemStore) save(ent *domain.URL) error {
 	v := &storeEntity{
-		Uuid:  uuid.NewString(),
+		UUID:  uuid.NewString(),
 		Alias: ent.Alias,
 		URL:   ent.URL,
 	}

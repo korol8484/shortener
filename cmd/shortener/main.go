@@ -23,7 +23,7 @@ func main() {
 		log.Fatalf("can't retrive pwd %s", err)
 	}
 
-	flag.StringVar(&cfg.Listen, "a", ":8081", "Http service list addr")
+	flag.StringVar(&cfg.Listen, "a", ":8080", "Http service list addr")
 	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
 	flag.StringVar(&cfg.FileStoragePath, "f", path.Join(pwd, "/data/db"), "set db file path")
 	flag.Parse()
