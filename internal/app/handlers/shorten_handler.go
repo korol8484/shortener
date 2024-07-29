@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/korol8484/shortener/internal/app/util"
 	"io"
 	"net/http"
 )
@@ -16,7 +17,7 @@ type response struct {
 }
 
 func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
-	cT := filterContentType(r.Header.Get("Content-Type"))
+	cT := util.FilterContentType(r.Header.Get("Content-Type"))
 	if cT != mimeJSON {
 		w.WriteHeader(http.StatusBadRequest)
 		return

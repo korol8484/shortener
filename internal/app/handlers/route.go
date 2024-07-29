@@ -19,6 +19,7 @@ func CreateRouter(
 	r.Use(
 		middleware.LoggResponse(logger),
 		middleware.LoggRequest(logger),
+		middleware.NewCompressor().Handler,
 	)
 
 	r.Post("/", api.HandleShort)
