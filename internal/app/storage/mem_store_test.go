@@ -1,19 +1,29 @@
 package storage
 
 import (
+	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 )
 
 func TestMemStore_Add(t *testing.T) {
-	store := NewMemStore()
-	err := store.Add(&domain.URL{
+	store, err := NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
+	require.NoError(t, err)
+
+	defer func(store Store) {
+		_ = store.Close()
+	}(store)
+
+	err = store.Add(&domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
 	require.NoError(t, err)
+
+	_ = os.Remove(os.TempDir() + "/test")
 }
 
 func TestMemStore_Read(t *testing.T) {
@@ -23,8 +33,18 @@ func TestMemStore_Read(t *testing.T) {
 		err   error
 	}
 
-	store := NewMemStore()
-	err := store.Add(&domain.URL{
+	store, err := NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
+	require.NoError(t, err)
+
+	defer func(store Store) {
+		_ = store.Close()
+	}(store)
+
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(os.TempDir() + "/test")
+
+	err = store.Add(&domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})

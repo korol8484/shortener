@@ -11,13 +11,21 @@ import (
 	"go.uber.org/zap"
 	"log"
 	"net/http"
+	"os"
+	"path"
 )
 
 func main() {
 	cfg := &config.App{}
 
-	flag.StringVar(&cfg.Listen, "a", ":8080", "Http service list addr")
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("can't retrive pwd %s", err)
+	}
+
+	flag.StringVar(&cfg.Listen, "a", ":8081", "Http service list addr")
 	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
+	flag.StringVar(&cfg.FileStoragePath, "f", path.Join(pwd, "/data/db"), "set db file path")
 	flag.Parse()
 
 	zLog, err := logger.NewLogger(false)
@@ -43,7 +51,14 @@ func main() {
 }
 
 func run(cfg *config.App, log *zap.Logger) error {
-	store := storage.NewMemStore()
+	store, err := storage.NewMemStore(cfg)
+	if err != nil {
+		return err
+	}
+
+	defer func(store storage.Store) {
+		_ = store.Close()
+	}(store)
 
 	return http.ListenAndServe(
 		cfg.Listen,

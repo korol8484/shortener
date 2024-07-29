@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 )
@@ -47,7 +48,18 @@ func TestAPI_HandleShort(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	api := NewAPI(storage.NewMemStore(), &config.App{BaseShortURL: srv.URL})
+	store, err := storage.NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
+	require.NoError(t, err)
+
+	defer func(store storage.Store) {
+		_ = store.Close()
+	}(store)
+
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(os.TempDir() + "/test")
+
+	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
 	router.Post("/", api.HandleShort)
 
 	client := &http.Client{}
@@ -76,10 +88,21 @@ func TestAPI_HandleRedirect(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	api := NewAPI(storage.NewMemStore(), &config.App{BaseShortURL: srv.URL})
+	store, err := storage.NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
+	require.NoError(t, err)
+
+	defer func(store storage.Store) {
+		_ = store.Close()
+	}(store)
+
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(os.TempDir() + "/test")
+
+	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
 	router.Get("/{id}", api.HandleRedirect)
 
-	err := api.store.Add(&domain.URL{
+	err = api.store.Add(&domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
@@ -155,7 +178,18 @@ func TestAPI_ShortenJson(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	api := NewAPI(storage.NewMemStore(), &config.App{BaseShortURL: srv.URL})
+	store, err := storage.NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
+	require.NoError(t, err)
+
+	defer func(store storage.Store) {
+		_ = store.Close()
+	}(store)
+
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(os.TempDir() + "/test")
+
+	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
 	router.Post("/json", api.ShortenJSON)
 
 	client := &http.Client{}
