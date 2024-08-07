@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 )
@@ -26,17 +27,17 @@ func TestAPI_HandleShort(t *testing.T) {
 		name string
 		want want
 	}{
-		{name: "success ya", want: want{
+		{name: "success_ya", want: want{
 			method:      http.MethodPost,
 			code:        201,
 			contentType: "text/plain; charset=utf-8",
 			body:        "http://www.ya.ru",
 		}},
-		{name: "not post", want: want{
+		{name: "not_post_request", want: want{
 			method: http.MethodGet,
 			code:   405,
 		}},
-		{name: "invalid url", want: want{
+		{name: "invalid_url_in_request", want: want{
 			method: http.MethodPost,
 			code:   400,
 			body:   "http__://www.ya.ru",
@@ -47,7 +48,18 @@ func TestAPI_HandleShort(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	api := NewAPI(storage.NewMemStore(), &config.App{BaseShortURL: srv.URL})
+	store, err := storage.NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
+	require.NoError(t, err)
+
+	defer func(store storage.Store) {
+		_ = store.Close()
+	}(store)
+
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(os.TempDir() + "/test")
+
+	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
 	router.Post("/", api.HandleShort)
 
 	client := &http.Client{}
@@ -56,6 +68,7 @@ func TestAPI_HandleShort(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req, err := http.NewRequest(test.want.method, srv.URL+"/", strings.NewReader(test.want.body))
 			require.NoError(t, err)
+			req.Header.Set("Content-Type", "text/plain; charset=utf-8")
 
 			defer req.Body.Close()
 
@@ -75,10 +88,21 @@ func TestAPI_HandleRedirect(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	api := NewAPI(storage.NewMemStore(), &config.App{BaseShortURL: srv.URL})
+	store, err := storage.NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
+	require.NoError(t, err)
+
+	defer func(store storage.Store) {
+		_ = store.Close()
+	}(store)
+
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(os.TempDir() + "/test")
+
+	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
 	router.Get("/{id}", api.HandleRedirect)
 
-	err := api.store.Add(&domain.Entity{
+	err = api.store.Add(&domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
@@ -145,6 +169,74 @@ func TestAPI_HandleRedirect(t *testing.T) {
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.expectedURL, res.Header.Get("Location"))
+		})
+	}
+}
+
+func TestAPI_ShortenJson(t *testing.T) {
+	router := chi.NewRouter()
+	srv := httptest.NewServer(router)
+	defer srv.Close()
+
+	store, err := storage.NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
+	require.NoError(t, err)
+
+	defer func(store storage.Store) {
+		_ = store.Close()
+	}(store)
+
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(os.TempDir() + "/test")
+
+	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
+	router.Post("/json", api.ShortenJSON)
+
+	client := &http.Client{}
+
+	type want struct {
+		code        int
+		method      string
+		response    string
+		contentType string
+		body        string
+	}
+	tests := []struct {
+		name string
+		want want
+	}{
+		{name: "success_ya", want: want{
+			method:      http.MethodPost,
+			code:        201,
+			contentType: "application/json",
+			body:        "{\"url\": \"https://practicum.yandex.ru\"}",
+		}},
+		{name: "not_post_request", want: want{
+			method: http.MethodGet,
+			code:   405,
+		}},
+		{name: "invalid_url_in_request", want: want{
+			method: http.MethodPost,
+			code:   400,
+			body:   "{\"url\": \"https__://practicum.yandex.ru\"}",
+		}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req, err := http.NewRequest(test.want.method, srv.URL+"/json", strings.NewReader(test.want.body))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+
+			defer req.Body.Close()
+
+			res, err := client.Do(req)
+			require.NoError(t, err)
+
+			defer res.Body.Close()
+
+			assert.Equal(t, test.want.code, res.StatusCode)
+			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
 		})
 	}
 }

@@ -12,6 +12,15 @@ import (
 	"time"
 )
 
+const (
+	mimeJSON  = "application/json"
+	mimePlain = "text/plain"
+)
+
+type Config interface {
+	GetBaseShortURL() string
+}
+
 type API struct {
 	store storage.Store
 	cfg   Config
@@ -28,18 +37,12 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parsedURL, err := url.Parse(string(body))
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	// по сути лишнее, закрывается в net/http
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(r.Body)
 
-	ent := &domain.Entity{
-		URL:   parsedURL.String(),
-		Alias: a.genAlias(6),
-	}
-
-	err = a.store.Add(ent)
+	ent, err := a.shortURL(string(body))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -78,4 +81,22 @@ func (a *API) genAlias(keyLen int) string {
 	}
 
 	return string(keyMap)
+}
+
+func (a *API) shortURL(shortURL string) (*domain.URL, error) {
+	parsedURL, err := url.Parse(shortURL)
+	if err != nil {
+		return nil, err
+	}
+
+	ent := &domain.URL{
+		URL:   parsedURL.String(),
+		Alias: a.genAlias(6),
+	}
+
+	if err = a.store.Add(ent); err != nil {
+		return nil, err
+	}
+
+	return ent, nil
 }
