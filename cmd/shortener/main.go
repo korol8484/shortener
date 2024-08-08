@@ -68,6 +68,9 @@ func run(cfg *config.App, log *zap.Logger) error {
 		pingable = dbConn
 
 		store, err = dbstore.NewStorage(dbConn)
+		if err != nil {
+			return err
+		}
 	} else if cfg.FileStoragePath != "" {
 		store, err = file.NewFileStore(cfg, memory.NewMemStore())
 		if err != nil {
