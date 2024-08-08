@@ -27,7 +27,7 @@ func (s *Storage) Add(ctx context.Context, ent *domain.URL) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	_, err := s.db.ExecContext(ctx, "INSERT INTO shortener (url, alias) VALUES ('?', '?')", ent.URL, ent.Alias)
+	_, err := s.db.ExecContext(ctx, "INSERT INTO shortener (id, url, alias) VALUES (DEFAULT, '?', '?')", ent.URL, ent.Alias)
 	if err != nil {
 		return err
 	}
@@ -81,6 +81,10 @@ func (s *Storage) migrate(ctx context.Context) error {
 
 	_, err = tx.ExecContext(ctx, `create index if not exists shortener_alias_index on public.shortener (alias);`)
 	if err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
 		return err
 	}
 
