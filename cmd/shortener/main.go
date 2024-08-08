@@ -8,6 +8,7 @@ import (
 	"github.com/korol8484/shortener/internal/app/db"
 	"github.com/korol8484/shortener/internal/app/handlers"
 	"github.com/korol8484/shortener/internal/app/logger"
+	dbstore "github.com/korol8484/shortener/internal/app/storage/db"
 	"github.com/korol8484/shortener/internal/app/storage/file"
 	"github.com/korol8484/shortener/internal/app/storage/memory"
 	"go.uber.org/zap"
@@ -56,8 +57,18 @@ func main() {
 func run(cfg *config.App, log *zap.Logger) error {
 	var store handlers.Store
 	var err error
+	var pingable handlers.Pingable
 
-	if cfg.FileStoragePath != "" {
+	if cfg.DBDsn != "" {
+		dbConn, err := db.NewPgDB(cfg)
+		if err != nil {
+			return err
+		}
+
+		pingable = dbConn
+
+		store, err = dbstore.NewStorage(dbConn)
+	} else if cfg.FileStoragePath != "" {
 		store, err = file.NewFileStore(cfg, memory.NewMemStore())
 		if err != nil {
 			return err
@@ -70,13 +81,12 @@ func run(cfg *config.App, log *zap.Logger) error {
 		store = memory.NewMemStore()
 	}
 
-	dbConn, err := db.NewPgDB(cfg)
-	if err != nil {
-		return err
+	if pingable == nil {
+		pingable = handlers.NewPingDummy()
 	}
 
 	return http.ListenAndServe(
 		cfg.Listen,
-		handlers.CreateRouter(store, cfg, log, dbConn),
+		handlers.CreateRouter(store, cfg, log, pingable),
 	)
 }

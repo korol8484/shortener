@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/handlers"
 	"github.com/korol8484/shortener/internal/app/storage"
@@ -16,7 +17,7 @@ func TestMemStore_Add(t *testing.T) {
 		_ = store.Close()
 	}(store)
 
-	err := store.Add(&domain.URL{
+	err := store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
@@ -36,7 +37,7 @@ func TestMemStore_Read(t *testing.T) {
 		_ = store.Close()
 	}(store)
 
-	err := store.Add(&domain.URL{
+	err := store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
@@ -64,7 +65,7 @@ func TestMemStore_Read(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ent, err := store.Read(test.want.alias)
+			ent, err := store.Read(context.Background(), test.want.alias)
 			if test.want.err == nil {
 				require.NoError(t, err)
 				assert.Equal(t, test.want.url, ent.URL)

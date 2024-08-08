@@ -2,6 +2,7 @@ package file
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/google/uuid"
@@ -32,7 +33,7 @@ type Store struct {
 	baseStore handlers.Store
 }
 
-func NewFileStore(config Config, base handlers.Store) (handlers.Store, error) {
+func NewFileStore(config Config, base handlers.Store) (*Store, error) {
 	file, err := create(config.GetStoragePath())
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func (f *Store) load() error {
 			return err
 		}
 
-		if err := f.baseStore.Add(&domain.URL{
+		if err := f.baseStore.Add(context.Background(), &domain.URL{
 			URL:   v.URL,
 			Alias: v.Alias,
 		}); err != nil {
@@ -76,11 +77,11 @@ func (f *Store) load() error {
 	return nil
 }
 
-func (f *Store) Add(ent *domain.URL) error {
+func (f *Store) Add(ctx context.Context, ent *domain.URL) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	_, err := f.baseStore.Read(ent.Alias)
+	_, err := f.baseStore.Read(ctx, ent.Alias)
 	if !errors.Is(err, storage.ErrNotFound) {
 		return err
 	}
@@ -89,15 +90,15 @@ func (f *Store) Add(ent *domain.URL) error {
 		return err
 	}
 
-	if err = f.baseStore.Add(ent); err != nil {
+	if err = f.baseStore.Add(ctx, ent); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (f *Store) Read(alias string) (*domain.URL, error) {
-	return f.baseStore.Read(alias)
+func (f *Store) Read(ctx context.Context, alias string) (*domain.URL, error) {
+	return f.baseStore.Read(ctx, alias)
 }
 
 func (f *Store) Close() error {

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/domain"
@@ -91,7 +92,7 @@ func TestAPI_HandleRedirect(t *testing.T) {
 	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
 	router.Get("/{id}", api.HandleRedirect)
 
-	err := api.store.Add(&domain.URL{
+	err := api.store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})

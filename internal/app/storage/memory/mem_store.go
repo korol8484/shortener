@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage"
 	"sync"
@@ -19,7 +20,7 @@ func NewMemStore() *MemStore {
 	return store
 }
 
-func (m *MemStore) Add(ent *domain.URL) error {
+func (m *MemStore) Add(ctx context.Context, ent *domain.URL) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -28,7 +29,7 @@ func (m *MemStore) Add(ent *domain.URL) error {
 	return nil
 }
 
-func (m *MemStore) Read(alias string) (*domain.URL, error) {
+func (m *MemStore) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
