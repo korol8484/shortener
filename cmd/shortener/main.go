@@ -28,7 +28,7 @@ func main() {
 	flag.StringVar(&cfg.Listen, "a", ":8080", "Http service list addr")
 	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
 	flag.StringVar(&cfg.FileStoragePath, "f", path.Join(pwd, "/data/db"), "set db file path")
-	flag.StringVar(&cfg.DbDsn, "d", "", "set postgresql connection string (DSN)")
+	flag.StringVar(&cfg.DBDsn, "d", "", "set postgresql connection string (DSN)")
 	flag.Parse()
 
 	zLog, err := logger.NewLogger(false)
@@ -70,7 +70,7 @@ func run(cfg *config.App, log *zap.Logger) error {
 		store = memory.NewMemStore()
 	}
 
-	dbConn, err := db.NewPgDb(cfg)
+	dbConn, err := db.NewPgDB(cfg)
 	if err != nil {
 		return err
 	}

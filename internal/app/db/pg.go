@@ -10,7 +10,7 @@ type Config interface {
 	GetDsn() string
 }
 
-func NewPgDb(cfg Config) (*sql.DB, error) {
+func NewPgDB(cfg Config) (*sql.DB, error) {
 	db, err := sql.Open("pgx", cfg.GetDsn())
 	if err != nil {
 		return nil, err

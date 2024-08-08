@@ -4,7 +4,7 @@ type App struct {
 	Listen          string `env:"SERVER_ADDRESS"`
 	BaseShortURL    string `env:"BASE_URL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
-	DbDsn           string `env:"DATABASE_DSN"`
+	DBDsn           string `env:"DATABASE_DSN"`
 }
 
 func (a *App) GetBaseShortURL() string {
@@ -16,5 +16,5 @@ func (a *App) GetStoragePath() string {
 }
 
 func (a *App) GetDsn() string {
-	return a.DbDsn
+	return a.DBDsn
 }
