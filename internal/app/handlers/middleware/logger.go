@@ -20,15 +20,17 @@ func LoggRequest(logger *zap.Logger) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
-			next.ServeHTTP(w, r)
+			defer func() {
+				duration := time.Since(start)
+				logger.Info(
+					"request",
+					zap.String("RequestURI", r.RequestURI),
+					zap.String("Method", r.Method),
+					zap.Duration("ElapsedTime", duration),
+				)
+			}()
 
-			duration := time.Since(start)
-			logger.Info(
-				"request",
-				zap.String("RequestURI", r.RequestURI),
-				zap.String("Method", r.Method),
-				zap.Duration("ElapsedTime", duration),
-			)
+			next.ServeHTTP(w, r)
 		})
 	}
 }
@@ -40,13 +42,15 @@ func LoggResponse(logger *zap.Logger) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			wr := &writer{ResponseWriter: w}
 
-			next.ServeHTTP(wr, r)
+			defer func() {
+				logger.Info(
+					"response",
+					zap.Int("StatusCode", wr.code),
+					zap.Int("BytesWritten", wr.bytes),
+				)
+			}()
 
-			logger.Info(
-				"response",
-				zap.Int("StatusCode", wr.code),
-				zap.Int("BytesWritten", wr.bytes),
-			)
+			next.ServeHTTP(wr, r)
 		})
 	}
 }

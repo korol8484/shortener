@@ -4,13 +4,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/domain"
-	"github.com/korol8484/shortener/internal/app/storage"
+	"github.com/korol8484/shortener/internal/app/storage/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 )
@@ -48,16 +47,11 @@ func TestAPI_HandleShort(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	store, err := storage.NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
-	require.NoError(t, err)
+	store := memory.NewMemStore()
 
-	defer func(store storage.Store) {
+	defer func(store Store) {
 		_ = store.Close()
 	}(store)
-
-	defer func(name string) {
-		_ = os.Remove(name)
-	}(os.TempDir() + "/test")
 
 	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
 	router.Post("/", api.HandleShort)
@@ -88,21 +82,16 @@ func TestAPI_HandleRedirect(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	store, err := storage.NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
-	require.NoError(t, err)
+	store := memory.NewMemStore()
 
-	defer func(store storage.Store) {
+	defer func(store Store) {
 		_ = store.Close()
 	}(store)
-
-	defer func(name string) {
-		_ = os.Remove(name)
-	}(os.TempDir() + "/test")
 
 	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
 	router.Get("/{id}", api.HandleRedirect)
 
-	err = api.store.Add(&domain.URL{
+	err := api.store.Add(&domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
@@ -178,16 +167,11 @@ func TestAPI_ShortenJson(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	store, err := storage.NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
-	require.NoError(t, err)
+	store := memory.NewMemStore()
 
-	defer func(store storage.Store) {
+	defer func(store Store) {
 		_ = store.Close()
 	}(store)
-
-	defer func(name string) {
-		_ = os.Remove(name)
-	}(os.TempDir() + "/test")
 
 	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
 	router.Post("/json", api.ShortenJSON)
