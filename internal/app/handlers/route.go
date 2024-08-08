@@ -3,15 +3,15 @@ package handlers
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/korol8484/shortener/internal/app/handlers/middleware"
-	"github.com/korol8484/shortener/internal/app/storage"
 	"go.uber.org/zap"
 	"net/http"
 )
 
 func CreateRouter(
-	store storage.Store,
+	store Store,
 	cfg Config,
 	logger *zap.Logger,
+	p Pingable,
 ) http.Handler {
 	api := NewAPI(store, cfg)
 	r := chi.NewRouter()
@@ -25,6 +25,7 @@ func CreateRouter(
 	r.Post("/", api.HandleShort)
 	r.Get("/{id}", api.HandleRedirect)
 	r.Post("/api/shorten", api.ShortenJSON)
+	r.Get("/ping", Ping(p))
 
 	return r
 }

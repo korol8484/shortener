@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/korol8484/shortener/internal/app/domain"
-	"github.com/korol8484/shortener/internal/app/storage"
 	"io"
 	"math/rand"
 	"net/http"
@@ -21,12 +20,18 @@ type Config interface {
 	GetBaseShortURL() string
 }
 
+type Store interface {
+	Add(ent *domain.URL) error
+	Read(alias string) (*domain.URL, error)
+	Close() error
+}
+
 type API struct {
-	store storage.Store
+	store Store
 	cfg   Config
 }
 
-func NewAPI(store storage.Store, cfg Config) *API {
+func NewAPI(store Store, cfg Config) *API {
 	return &API{store: store, cfg: cfg}
 }
 

@@ -5,9 +5,11 @@ import (
 	"flag"
 	"github.com/caarlos0/env/v11"
 	"github.com/korol8484/shortener/internal/app/config"
+	"github.com/korol8484/shortener/internal/app/db"
 	"github.com/korol8484/shortener/internal/app/handlers"
 	"github.com/korol8484/shortener/internal/app/logger"
-	"github.com/korol8484/shortener/internal/app/storage"
+	"github.com/korol8484/shortener/internal/app/storage/file"
+	"github.com/korol8484/shortener/internal/app/storage/memory"
 	"go.uber.org/zap"
 	"log"
 	"net/http"
@@ -26,6 +28,7 @@ func main() {
 	flag.StringVar(&cfg.Listen, "a", ":8080", "Http service list addr")
 	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
 	flag.StringVar(&cfg.FileStoragePath, "f", path.Join(pwd, "/data/db"), "set db file path")
+	flag.StringVar(&cfg.DbDsn, "d", "", "set postgresql connection string (DSN)")
 	flag.Parse()
 
 	zLog, err := logger.NewLogger(false)
@@ -51,17 +54,29 @@ func main() {
 }
 
 func run(cfg *config.App, log *zap.Logger) error {
-	store, err := storage.NewMemStore(cfg)
+	var store handlers.Store
+	var err error
+
+	if cfg.FileStoragePath != "" {
+		store, err = file.NewFileStore(cfg, memory.NewMemStore())
+		if err != nil {
+			return err
+		}
+
+		defer func(store handlers.Store) {
+			_ = store.Close()
+		}(store)
+	} else {
+		store = memory.NewMemStore()
+	}
+
+	dbConn, err := db.NewPgDb(cfg)
 	if err != nil {
 		return err
 	}
 
-	defer func(store storage.Store) {
-		_ = store.Close()
-	}(store)
-
 	return http.ListenAndServe(
 		cfg.Listen,
-		handlers.CreateRouter(store, cfg, log),
+		handlers.CreateRouter(store, cfg, log, dbConn),
 	)
 }
