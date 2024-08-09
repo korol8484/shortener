@@ -40,6 +40,11 @@ func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err = a.store.Add(r.Context(), ent); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	res := &response{Result: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)}
 
 	b, err := json.Marshal(res)
