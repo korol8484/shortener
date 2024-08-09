@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/korol8484/shortener/internal/app/domain"
-	"github.com/korol8484/shortener/internal/app/storage"
 	"io"
 	"math/rand"
 	"net/http"
@@ -21,12 +21,18 @@ type Config interface {
 	GetBaseShortURL() string
 }
 
+type Store interface {
+	Add(ctx context.Context, ent *domain.URL) error
+	Read(ctx context.Context, alias string) (*domain.URL, error)
+	Close() error
+}
+
 type API struct {
-	store storage.Store
+	store Store
 	cfg   Config
 }
 
-func NewAPI(store storage.Store, cfg Config) *API {
+func NewAPI(store Store, cfg Config) *API {
 	return &API{store: store, cfg: cfg}
 }
 
@@ -42,7 +48,7 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		_ = Body.Close()
 	}(r.Body)
 
-	ent, err := a.shortURL(string(body))
+	ent, err := a.shortURL(r.Context(), string(body))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -61,7 +67,7 @@ func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ent, err := a.store.Read(alias)
+	ent, err := a.store.Read(r.Context(), alias)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -83,7 +89,7 @@ func (a *API) genAlias(keyLen int) string {
 	return string(keyMap)
 }
 
-func (a *API) shortURL(shortURL string) (*domain.URL, error) {
+func (a *API) shortURL(ctx context.Context, shortURL string) (*domain.URL, error) {
 	parsedURL, err := url.Parse(shortURL)
 	if err != nil {
 		return nil, err
@@ -94,7 +100,7 @@ func (a *API) shortURL(shortURL string) (*domain.URL, error) {
 		Alias: a.genAlias(6),
 	}
 
-	if err = a.store.Add(ent); err != nil {
+	if err = a.store.Add(ctx, ent); err != nil {
 		return nil, err
 	}
 

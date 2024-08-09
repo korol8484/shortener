@@ -18,7 +18,7 @@ type Compressor struct {
 	allowedTypes map[string]struct{}
 }
 
-// NewCompressor - Для расирения типов, пока дефолтные
+// NewCompressor - Для расширения типов, пока дефолтные
 func NewCompressor() *Compressor {
 	allowedTypes := make(map[string]struct{})
 
