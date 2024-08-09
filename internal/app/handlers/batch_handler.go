@@ -9,12 +9,12 @@ import (
 )
 
 type batchRequestItem struct {
-	Id  string `json:"correlation_id"`
+	ID  string `json:"correlation_id"`
 	URL string `json:"original_url"`
 }
 
 type batchResponseItem struct {
-	Id  string `json:"correlation_id"`
+	ID  string `json:"correlation_id"`
 	URL string `json:"short_url"`
 }
 
@@ -51,7 +51,7 @@ func (a *API) ShortenBatch(w http.ResponseWriter, r *http.Request) {
 
 		batchD = append(batchD, ent)
 		batchR = append(batchR, &batchResponseItem{
-			Id:  v.Id,
+			ID:  v.ID,
 			URL: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias),
 		})
 	}

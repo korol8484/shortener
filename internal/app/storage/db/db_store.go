@@ -68,6 +68,9 @@ func (s *Storage) AddBatch(ctx context.Context, batch domain.BatchURL) error {
 
 	insert := fmt.Sprintf("INSERT INTO shortener (url, alias) VALUES %s", strings.Join(placeholders, ","))
 	_, err = tx.ExecContext(ctx, insert, vals...)
+	if err != nil {
+		return err
+	}
 
 	if err = tx.Commit(); err != nil {
 		return err
