@@ -27,7 +27,9 @@ func (s *Storage) Add(ctx context.Context, ent *domain.URL) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	_, err := s.db.ExecContext(ctx, "INSERT INTO shortener (id, url, alias) VALUES (DEFAULT, '?', '?')", ent.URL, ent.Alias)
+	_, err := s.db.Exec(
+		`INSERT INTO shortener (url, alias) VALUES ($1,$2)`, ent.URL, ent.Alias,
+	)
 	if err != nil {
 		return err
 	}
@@ -39,7 +41,7 @@ func (s *Storage) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	row := s.db.QueryRowContext(ctx, "SELECT t.url, t.alias FROM public.shortener t WHERE alias = '?'", alias)
+	row := s.db.QueryRowContext(ctx, "SELECT t.url, t.alias FROM public.shortener t WHERE alias = $1", alias)
 	if row.Err() != nil {
 		return nil, row.Err()
 	}
