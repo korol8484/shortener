@@ -3,7 +3,9 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/korol8484/shortener/internal/app/domain"
+	"strings"
 	"sync"
 )
 
@@ -27,10 +29,47 @@ func (s *Storage) Add(ctx context.Context, ent *domain.URL) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	_, err := s.db.Exec(
-		`INSERT INTO shortener (url, alias) VALUES ($1,$2)`, ent.URL, ent.Alias,
+	_, err := s.db.ExecContext(
+		ctx, `INSERT INTO shortener (url, alias) VALUES ($1,$2)`, ent.URL, ent.Alias,
 	)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Storage) AddBatch(ctx context.Context, batch domain.BatchURL) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func(tx *sql.Tx) {
+		_ = tx.Rollback()
+	}(tx)
+
+	var (
+		placeholders []string
+		vals         []interface{}
+	)
+
+	for i, v := range batch {
+		placeholders = append(placeholders, fmt.Sprintf("($%d,$%d)",
+			i*2+1,
+			i*2+2,
+		))
+
+		vals = append(vals, v.URL, v.Alias)
+	}
+
+	insert := fmt.Sprintf("INSERT INTO shortener (url, alias) VALUES %s", strings.Join(placeholders, ","))
+	_, err = tx.ExecContext(ctx, insert, vals...)
+
+	if err = tx.Commit(); err != nil {
 		return err
 	}
 

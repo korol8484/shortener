@@ -97,6 +97,28 @@ func (f *Store) Add(ctx context.Context, ent *domain.URL) error {
 	return nil
 }
 
+func (f *Store) AddBatch(ctx context.Context, batch domain.BatchURL) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	for _, v := range batch {
+		_, err := f.baseStore.Read(ctx, v.Alias)
+		if !errors.Is(err, storage.ErrNotFound) {
+			return err
+		}
+
+		if err = f.save(v); err != nil {
+			return err
+		}
+
+		if err = f.baseStore.Add(ctx, v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (f *Store) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	return f.baseStore.Read(ctx, alias)
 }

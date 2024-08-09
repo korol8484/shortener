@@ -34,8 +34,13 @@ func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ent, err := a.shortURL(r.Context(), req.URL)
+	ent, err := a.shortURL(req.URL)
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err = a.store.Add(r.Context(), ent); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

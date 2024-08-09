@@ -25,6 +25,7 @@ func CreateRouter(
 	r.Post("/", api.HandleShort)
 	r.Get("/{id}", api.HandleRedirect)
 	r.Post("/api/shorten", api.ShortenJSON)
+	r.Post("/api/shorten/batch", api.ShortenBatch)
 	r.Get("/ping", Ping(p))
 
 	return r

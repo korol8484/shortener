@@ -24,6 +24,7 @@ type Config interface {
 type Store interface {
 	Add(ctx context.Context, ent *domain.URL) error
 	Read(ctx context.Context, alias string) (*domain.URL, error)
+	AddBatch(ctx context.Context, batch domain.BatchURL) error
 	Close() error
 }
 
@@ -48,8 +49,13 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		_ = Body.Close()
 	}(r.Body)
 
-	ent, err := a.shortURL(r.Context(), string(body))
+	ent, err := a.shortURL(string(body))
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err = a.store.Add(r.Context(), ent); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -89,7 +95,7 @@ func (a *API) genAlias(keyLen int) string {
 	return string(keyMap)
 }
 
-func (a *API) shortURL(ctx context.Context, shortURL string) (*domain.URL, error) {
+func (a *API) shortURL(shortURL string) (*domain.URL, error) {
 	parsedURL, err := url.Parse(shortURL)
 	if err != nil {
 		return nil, err
@@ -98,10 +104,6 @@ func (a *API) shortURL(ctx context.Context, shortURL string) (*domain.URL, error
 	ent := &domain.URL{
 		URL:   parsedURL.String(),
 		Alias: a.genAlias(6),
-	}
-
-	if err = a.store.Add(ctx, ent); err != nil {
-		return nil, err
 	}
 
 	return ent, nil

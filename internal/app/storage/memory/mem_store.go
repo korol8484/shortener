@@ -29,6 +29,17 @@ func (m *MemStore) Add(ctx context.Context, ent *domain.URL) error {
 	return nil
 }
 
+func (m *MemStore) AddBatch(ctx context.Context, batch domain.BatchURL) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for _, v := range batch {
+		m.items[v.Alias] = v.URL
+	}
+
+	return nil
+}
+
 func (m *MemStore) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
