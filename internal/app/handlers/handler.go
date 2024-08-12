@@ -60,7 +60,7 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = a.store.Add(r.Context(), ent); err != nil {
-		if errors.Is(err, storage.ErrIssetUrl) {
+		if errors.Is(err, storage.ErrIssetURL) {
 			ent, err = a.store.ReadByURL(r.Context(), ent.URL)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)

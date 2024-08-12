@@ -43,7 +43,7 @@ func (s *Storage) Add(ctx context.Context, ent *domain.URL) error {
 	err := r.Scan(&id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return storage.ErrIssetUrl
+			return storage.ErrIssetURL
 		}
 
 		return err
