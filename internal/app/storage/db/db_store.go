@@ -3,10 +3,13 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
-	"github.com/korol8484/shortener/internal/app/domain"
 	"strings"
 	"sync"
+
+	"github.com/korol8484/shortener/internal/app/domain"
+	"github.com/korol8484/shortener/internal/app/storage"
 )
 
 type Storage struct {
@@ -29,10 +32,20 @@ func (s *Storage) Add(ctx context.Context, ent *domain.URL) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	_, err := s.db.ExecContext(
-		ctx, `INSERT INTO shortener (url, alias) VALUES ($1,$2)`, ent.URL, ent.Alias,
+	r := s.db.QueryRowContext(
+		ctx, `INSERT INTO shortener (url, alias) VALUES ($1,$2) ON CONFLICT (url) DO NOTHING RETURNING id`, ent.URL, ent.Alias,
 	)
+	if r.Err() != nil {
+		return r.Err()
+	}
+
+	var id int64
+	err := r.Scan(&id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return storage.ErrIssetUrl
+		}
+
 		return err
 	}
 
@@ -97,6 +110,24 @@ func (s *Storage) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	return ent, nil
 }
 
+func (s *Storage) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	row := s.db.QueryRowContext(ctx, "SELECT t.url, t.alias FROM public.shortener t WHERE url = $1", URL)
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+
+	ent := &domain.URL{}
+	err := row.Scan(&ent.URL, &ent.Alias)
+	if err != nil {
+		return nil, err
+	}
+
+	return ent, nil
+}
+
 func (s *Storage) Close() error {
 	return nil
 }
@@ -124,6 +155,11 @@ func (s *Storage) migrate(ctx context.Context) error {
 	}
 
 	_, err = tx.ExecContext(ctx, `create index if not exists shortener_alias_index on public.shortener (alias);`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS shortener_uidx_url ON shortener USING btree (url);`)
 	if err != nil {
 		return err
 	}

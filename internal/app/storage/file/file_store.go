@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/google/uuid"
-	"github.com/korol8484/shortener/internal/app/domain"
-	"github.com/korol8484/shortener/internal/app/handlers"
-	"github.com/korol8484/shortener/internal/app/storage"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/google/uuid"
+	"github.com/korol8484/shortener/internal/app/domain"
+	"github.com/korol8484/shortener/internal/app/handlers"
+	"github.com/korol8484/shortener/internal/app/storage"
 )
 
 // &config.App{FileStoragePath: os.TempDir() + "/test"}
@@ -121,6 +122,10 @@ func (f *Store) AddBatch(ctx context.Context, batch domain.BatchURL) error {
 
 func (f *Store) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	return f.baseStore.Read(ctx, alias)
+}
+
+func (f *Store) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) {
+	return f.baseStore.ReadByURL(ctx, URL)
 }
 
 func (f *Store) Close() error {

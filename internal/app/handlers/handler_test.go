@@ -2,17 +2,18 @@ package handlers
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"strings"
-	"testing"
 )
 
 func TestAPI_HandleShort(t *testing.T) {
@@ -182,7 +183,6 @@ func TestAPI_ShortenJson(t *testing.T) {
 	type want struct {
 		code        int
 		method      string
-		response    string
 		contentType string
 		body        string
 	}

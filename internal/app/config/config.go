@@ -15,6 +15,7 @@ func (a *App) GetStoragePath() string {
 	return a.FileStoragePath
 }
 
+// GetDsn - postgresql://postgres:postgres@localhost:5432/short
 func (a *App) GetDsn() string {
 	return a.DBDsn
 }

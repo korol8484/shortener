@@ -2,14 +2,17 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/korol8484/shortener/internal/app/domain"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/korol8484/shortener/internal/app/domain"
+	"github.com/korol8484/shortener/internal/app/storage"
 )
 
 const (
@@ -24,6 +27,7 @@ type Config interface {
 type Store interface {
 	Add(ctx context.Context, ent *domain.URL) error
 	Read(ctx context.Context, alias string) (*domain.URL, error)
+	ReadByURL(ctx context.Context, URL string) (*domain.URL, error)
 	AddBatch(ctx context.Context, batch domain.BatchURL) error
 	Close() error
 }
@@ -56,6 +60,19 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = a.store.Add(r.Context(), ent); err != nil {
+		if errors.Is(err, storage.ErrIssetUrl) {
+			ent, err = a.store.ReadByURL(r.Context(), ent.URL)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			w.Header().Set("content-type", "text/plain; charset=utf-8")
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)))
+			return
+		}
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

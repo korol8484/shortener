@@ -2,9 +2,10 @@ package memory
 
 import (
 	"context"
+	"sync"
+
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage"
-	"sync"
 )
 
 type MemStore struct {
@@ -49,6 +50,22 @@ func (m *MemStore) Read(ctx context.Context, alias string) (*domain.URL, error) 
 	}
 
 	return &domain.URL{Alias: alias, URL: m.items[alias]}, nil
+}
+
+func (m *MemStore) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	for k, v := range m.items {
+		if v == URL {
+			return &domain.URL{
+				URL:   v,
+				Alias: k,
+			}, nil
+		}
+	}
+
+	return nil, storage.ErrNotFound
 }
 
 func (m *MemStore) Close() error {

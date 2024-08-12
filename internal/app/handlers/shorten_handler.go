@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/korol8484/shortener/internal/app/storage"
 )
 
 type request struct {
@@ -41,6 +44,29 @@ func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = a.store.Add(r.Context(), ent); err != nil {
+
+		if errors.Is(err, storage.ErrIssetUrl) {
+			ent, err = a.store.ReadByURL(r.Context(), ent.URL)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			res := &response{Result: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)}
+
+			b, err := json.Marshal(res)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			w.Header().Set("content-type", mimeJSON)
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write(b)
+
+			return
+		}
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
