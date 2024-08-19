@@ -7,7 +7,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage"
+	"github.com/korol8484/shortener/internal/app/user/util"
 )
 
 type request struct {
@@ -43,14 +45,9 @@ func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.store.Add(r.Context(), ent); err != nil {
+	userId := util.ReadUserIdFromCtx(r.Context())
+	if err = a.store.Add(r.Context(), ent, &domain.User{ID: userId}); err != nil {
 		if errors.Is(err, storage.ErrIssetURL) {
-			ent, err = a.store.ReadByURL(r.Context(), ent.URL)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
 			res := &response{Result: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)}
 
 			b, err := json.Marshal(res)

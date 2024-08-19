@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage"
+	"github.com/korol8484/shortener/internal/app/user/util"
 )
 
 const (
@@ -25,10 +26,10 @@ type Config interface {
 }
 
 type Store interface {
-	Add(ctx context.Context, ent *domain.URL) error
+	Add(ctx context.Context, ent *domain.URL, user *domain.User) error
 	Read(ctx context.Context, alias string) (*domain.URL, error)
 	ReadByURL(ctx context.Context, URL string) (*domain.URL, error)
-	AddBatch(ctx context.Context, batch domain.BatchURL) error
+	AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error
 	Close() error
 }
 
@@ -59,14 +60,9 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.store.Add(r.Context(), ent); err != nil {
+	userId := util.ReadUserIdFromCtx(r.Context())
+	if err = a.store.Add(r.Context(), ent, &domain.User{ID: userId}); err != nil {
 		if errors.Is(err, storage.ErrIssetURL) {
-			ent, err = a.store.ReadByURL(r.Context(), ent.URL)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
 			w.Header().Set("content-type", "text/plain; charset=utf-8")
 			w.WriteHeader(http.StatusConflict)
 			w.Write([]byte(fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)))
@@ -99,10 +95,13 @@ func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, ent.URL, http.StatusTemporaryRedirect)
 }
 
-func (a *API) genAlias(keyLen int) string {
+func (a *API) genAlias(keyLen int, shortURL string) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	h := fnv.New64()
+	h.Write([]byte(shortURL))
+
+	r := rand.New(rand.NewSource(int64(h.Sum64())))
 
 	keyMap := make([]byte, keyLen)
 	for i := range keyMap {
@@ -120,7 +119,7 @@ func (a *API) shortURL(shortURL string) (*domain.URL, error) {
 
 	ent := &domain.URL{
 		URL:   parsedURL.String(),
-		Alias: a.genAlias(6),
+		Alias: a.genAlias(6, shortURL),
 	}
 
 	return ent, nil

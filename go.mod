@@ -5,6 +5,7 @@ go 1.22.0
 require (
 	github.com/caarlos0/env/v11 v11.1.0
 	github.com/go-chi/chi/v5 v5.1.0
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0

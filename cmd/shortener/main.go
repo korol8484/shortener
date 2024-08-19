@@ -3,19 +3,22 @@ package main
 import (
 	"errors"
 	"flag"
-	"github.com/caarlos0/env/v11"
-	"github.com/korol8484/shortener/internal/app/config"
-	"github.com/korol8484/shortener/internal/app/db"
-	"github.com/korol8484/shortener/internal/app/handlers"
-	"github.com/korol8484/shortener/internal/app/logger"
-	dbstore "github.com/korol8484/shortener/internal/app/storage/db"
-	"github.com/korol8484/shortener/internal/app/storage/file"
-	"github.com/korol8484/shortener/internal/app/storage/memory"
-	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"os"
 	"path"
+
+	"github.com/caarlos0/env/v11"
+	"github.com/korol8484/shortener/internal/app/config"
+	"github.com/korol8484/shortener/internal/app/db"
+	"github.com/korol8484/shortener/internal/app/handlers"
+	"github.com/korol8484/shortener/internal/app/handlers/middleware"
+	"github.com/korol8484/shortener/internal/app/logger"
+	dbstore "github.com/korol8484/shortener/internal/app/storage/db"
+	"github.com/korol8484/shortener/internal/app/storage/file"
+	"github.com/korol8484/shortener/internal/app/storage/memory"
+	userDBStore "github.com/korol8484/shortener/internal/app/user/storage"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -58,6 +61,7 @@ func run(cfg *config.App, log *zap.Logger) error {
 	var store handlers.Store
 	var err error
 	var pingable handlers.Pingable
+	var jwtUserRep middleware.UserAddRepository
 
 	if cfg.DBDsn != "" {
 		dbConn, err := db.NewPgDB(cfg)
@@ -71,16 +75,24 @@ func run(cfg *config.App, log *zap.Logger) error {
 		if err != nil {
 			return err
 		}
+
+		jwtUserRep, err = userDBStore.NewStorage(dbConn)
+		if err != nil {
+			return err
+		}
 	} else if cfg.FileStoragePath != "" {
 		store, err = file.NewFileStore(cfg, memory.NewMemStore())
 		if err != nil {
 			return err
 		}
 
+		jwtUserRep = userDBStore.NewMemoryStore()
+
 		defer func(store handlers.Store) {
 			_ = store.Close()
 		}(store)
 	} else {
+		jwtUserRep = userDBStore.NewMemoryStore()
 		store = memory.NewMemStore()
 	}
 
@@ -90,6 +102,6 @@ func run(cfg *config.App, log *zap.Logger) error {
 
 	return http.ListenAndServe(
 		cfg.Listen,
-		handlers.CreateRouter(store, cfg, log, pingable),
+		handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep),
 	)
 }

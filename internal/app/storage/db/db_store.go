@@ -28,7 +28,7 @@ func NewStorage(db *sql.DB) (*Storage, error) {
 	return storage, nil
 }
 
-func (s *Storage) Add(ctx context.Context, ent *domain.URL) error {
+func (s *Storage) Add(ctx context.Context, ent *domain.URL, user *domain.User) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -52,7 +52,7 @@ func (s *Storage) Add(ctx context.Context, ent *domain.URL) error {
 	return nil
 }
 
-func (s *Storage) AddBatch(ctx context.Context, batch domain.BatchURL) error {
+func (s *Storage) AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

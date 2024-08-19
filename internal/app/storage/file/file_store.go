@@ -23,9 +23,10 @@ type Config interface {
 }
 
 type storeEntity struct {
-	UUID  string `json:"uuid"`
-	Alias string `json:"short_url"`
-	URL   string `json:"original_url"`
+	UUID   string `json:"uuid"`
+	Alias  string `json:"short_url"`
+	URL    string `json:"original_url"`
+	UserID int64  `json:"user_id,omitempty"`
 }
 
 type Store struct {
@@ -70,7 +71,7 @@ func (f *Store) load() error {
 		if err := f.baseStore.Add(context.Background(), &domain.URL{
 			URL:   v.URL,
 			Alias: v.Alias,
-		}); err != nil {
+		}, &domain.User{ID: v.UserID}); err != nil {
 			return err
 		}
 	}
@@ -78,7 +79,7 @@ func (f *Store) load() error {
 	return nil
 }
 
-func (f *Store) Add(ctx context.Context, ent *domain.URL) error {
+func (f *Store) Add(ctx context.Context, ent *domain.URL, user *domain.User) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -87,32 +88,23 @@ func (f *Store) Add(ctx context.Context, ent *domain.URL) error {
 		return err
 	}
 
-	if err = f.save(ent); err != nil {
+	if err = f.save(ent, user); err != nil {
 		return err
 	}
 
-	if err = f.baseStore.Add(ctx, ent); err != nil {
+	if err = f.baseStore.Add(ctx, ent, user); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (f *Store) AddBatch(ctx context.Context, batch domain.BatchURL) error {
+func (f *Store) AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	for _, v := range batch {
-		_, err := f.baseStore.Read(ctx, v.Alias)
-		if !errors.Is(err, storage.ErrNotFound) {
-			return err
-		}
-
-		if err = f.save(v); err != nil {
-			return err
-		}
-
-		if err = f.baseStore.Add(ctx, v); err != nil {
+		if err := f.Add(ctx, v, user); err != nil {
 			return err
 		}
 	}
@@ -132,11 +124,12 @@ func (f *Store) Close() error {
 	return f.file.Close()
 }
 
-func (f *Store) save(ent *domain.URL) error {
+func (f *Store) save(ent *domain.URL, user *domain.User) error {
 	v := &storeEntity{
-		UUID:  uuid.NewString(),
-		Alias: ent.Alias,
-		URL:   ent.URL,
+		UUID:   uuid.NewString(),
+		Alias:  ent.Alias,
+		URL:    ent.URL,
+		UserID: user.ID,
 	}
 
 	b, err := json.Marshal(&v)
