@@ -46,13 +46,13 @@ func NewJwt(userRep UserAddRepository) *Jwt {
 func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cookie, err := r.Cookie(j.tokenName)
-			if err != nil {
+			token := r.Header.Get(j.tokenName)
+			if token == "" {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
-			claim, err := j.loadClaims(cookie.Value)
+			claim, err := j.loadClaims(token)
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
@@ -69,7 +69,7 @@ func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 			token := r.Header.Get(j.tokenName)
 
 			if token == "" {
-				user, err := j.setNewCookie(r.Context(), w)
+				user, err := j.setNewToken(r.Context(), w)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -86,7 +86,7 @@ func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 					return
 				}
 
-				user, err := j.setNewCookie(r.Context(), w)
+				user, err := j.setNewToken(r.Context(), w)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -101,7 +101,7 @@ func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 	}
 }
 
-func (j *Jwt) setNewCookie(ctx context.Context, w http.ResponseWriter) (*domain.User, error) {
+func (j *Jwt) setNewToken(ctx context.Context, w http.ResponseWriter) (*domain.User, error) {
 	user, err := j.userRep.NewUser(ctx)
 	if err != nil {
 		return nil, err
