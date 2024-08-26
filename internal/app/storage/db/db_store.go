@@ -177,6 +177,10 @@ func (s *Storage) ReadUserURL(ctx context.Context, user *domain.User) (domain.Ba
 		return nil, err
 	}
 
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
 	defer rows.Close()
 
 	var batch domain.BatchURL

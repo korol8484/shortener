@@ -71,12 +71,12 @@ func run(cfg *config.App, log *zap.Logger) error {
 
 		pingable = dbConn
 
-		store, err = dbstore.NewStorage(dbConn)
+		jwtUserRep, err = userDBStore.NewStorage(dbConn)
 		if err != nil {
 			return err
 		}
 
-		jwtUserRep, err = userDBStore.NewStorage(dbConn)
+		store, err = dbstore.NewStorage(dbConn)
 		if err != nil {
 			return err
 		}

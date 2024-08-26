@@ -13,10 +13,10 @@ type responseURL struct {
 }
 
 func (a *API) UserURL(w http.ResponseWriter, r *http.Request) {
-	userId := util.ReadUserIDFromCtx(r.Context())
+	userID := util.ReadUserIDFromCtx(r.Context())
 
 	batch, err := a.store.ReadUserURL(r.Context(), &domain.User{
-		ID: userId,
+		ID: userID,
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

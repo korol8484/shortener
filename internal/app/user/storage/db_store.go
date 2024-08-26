@@ -53,7 +53,9 @@ func (d *DBStorage) migrate(ctx context.Context) error {
 		return err
 	}
 	defer func(tx *sql.Tx) {
-		_ = tx.Rollback()
+		if err != nil {
+			_ = tx.Rollback()
+		}
 	}(tx)
 
 	_, err = tx.ExecContext(ctx, `
