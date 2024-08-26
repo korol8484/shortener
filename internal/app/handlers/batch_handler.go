@@ -58,8 +58,8 @@ func (a *API) ShortenBatch(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	userId := util.ReadUserIdFromCtx(r.Context())
-	if err = a.store.AddBatch(r.Context(), batchD, &domain.User{ID: userId}); err != nil {
+	userID := util.ReadUserIDFromCtx(r.Context())
+	if err = a.store.AddBatch(r.Context(), batchD, &domain.User{ID: userID}); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

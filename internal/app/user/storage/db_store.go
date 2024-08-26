@@ -8,13 +8,13 @@ import (
 	"github.com/korol8484/shortener/internal/app/domain"
 )
 
-type DbStorage struct {
+type DBStorage struct {
 	mu sync.RWMutex
 	db *sql.DB
 }
 
-func NewStorage(db *sql.DB) (*DbStorage, error) {
-	storage := &DbStorage{db: db}
+func NewStorage(db *sql.DB) (*DBStorage, error) {
+	storage := &DBStorage{db: db}
 
 	err := storage.migrate(context.Background())
 	if err != nil {
@@ -24,7 +24,7 @@ func NewStorage(db *sql.DB) (*DbStorage, error) {
 	return storage, nil
 }
 
-func (d *DbStorage) NewUser(ctx context.Context) (*domain.User, error) {
+func (d *DBStorage) NewUser(ctx context.Context) (*domain.User, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -44,7 +44,7 @@ func (d *DbStorage) NewUser(ctx context.Context) (*domain.User, error) {
 	return user, nil
 }
 
-func (d *DbStorage) migrate(ctx context.Context) error {
+func (d *DBStorage) migrate(ctx context.Context) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 

@@ -123,6 +123,11 @@ func (s *Storage) AddBatch(ctx context.Context, batch domain.BatchURL, user *dom
 	if err != nil {
 		return err
 	}
+
+	if rows.Err() != nil {
+		return rows.Err()
+	}
+
 	defer rows.Close()
 
 	ids := make([]int64, 0, len(batch))
@@ -163,7 +168,7 @@ func (s *Storage) AddBatch(ctx context.Context, batch domain.BatchURL, user *dom
 	return nil
 }
 
-func (s *Storage) ReadUserUrl(ctx context.Context, user *domain.User) (domain.BatchURL, error) {
+func (s *Storage) ReadUserURL(ctx context.Context, user *domain.User) (domain.BatchURL, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

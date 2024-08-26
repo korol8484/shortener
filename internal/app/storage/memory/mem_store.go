@@ -43,7 +43,7 @@ func (m *MemStore) AddBatch(ctx context.Context, batch domain.BatchURL, user *do
 	return nil
 }
 
-func (m *MemStore) ReadUserUrl(ctx context.Context, user *domain.User) (domain.BatchURL, error) {
+func (m *MemStore) ReadUserURL(ctx context.Context, user *domain.User) (domain.BatchURL, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 

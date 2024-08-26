@@ -31,7 +31,7 @@ func CreateRouter(
 		r.Get("/{id}", api.HandleRedirect)
 		r.With(jwtH.HandlerSet()).Post("/api/shorten", api.ShortenJSON)
 		r.With(jwtH.HandlerSet()).Post("/api/shorten/batch", api.ShortenBatch)
-		r.With(jwtH.HandlerRead()).Get("/api/user/urls", api.UserUrl)
+		r.With(jwtH.HandlerRead()).Get("/api/user/urls", api.UserURL)
 	})
 
 	r.Get("/ping", Ping(p))

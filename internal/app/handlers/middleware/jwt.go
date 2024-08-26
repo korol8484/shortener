@@ -58,7 +58,7 @@ func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 				return
 			}
 
-			next.ServeHTTP(w, r.WithContext(util.SetUserIdToCtx(r.Context(), claim.UserID)))
+			next.ServeHTTP(w, r.WithContext(util.SetUserIDToCtx(r.Context(), claim.UserID)))
 		})
 	}
 }
@@ -80,7 +80,7 @@ func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 					return
 				}
 
-				next.ServeHTTP(w, r.WithContext(util.SetUserIdToCtx(r.Context(), user.ID)))
+				next.ServeHTTP(w, r.WithContext(util.SetUserIDToCtx(r.Context(), user.ID)))
 				return
 			}
 
@@ -97,11 +97,11 @@ func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 					return
 				}
 
-				next.ServeHTTP(w, r.WithContext(util.SetUserIdToCtx(r.Context(), user.ID)))
+				next.ServeHTTP(w, r.WithContext(util.SetUserIDToCtx(r.Context(), user.ID)))
 				return
 			}
 
-			next.ServeHTTP(w, r.WithContext(util.SetUserIdToCtx(r.Context(), claim.UserID)))
+			next.ServeHTTP(w, r.WithContext(util.SetUserIDToCtx(r.Context(), claim.UserID)))
 		})
 	}
 }

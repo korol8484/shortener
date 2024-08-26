@@ -45,8 +45,8 @@ func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId := util.ReadUserIdFromCtx(r.Context())
-	if err = a.store.Add(r.Context(), ent, &domain.User{ID: userId}); err != nil {
+	userID := util.ReadUserIDFromCtx(r.Context())
+	if err = a.store.Add(r.Context(), ent, &domain.User{ID: userID}); err != nil {
 		if errors.Is(err, storage.ErrIssetURL) {
 			res := &response{Result: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)}
 

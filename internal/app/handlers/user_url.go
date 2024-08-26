@@ -12,10 +12,10 @@ type responseURL struct {
 	Alias string `json:"original_url"`
 }
 
-func (a *API) UserUrl(w http.ResponseWriter, r *http.Request) {
-	userId := util.ReadUserIdFromCtx(r.Context())
+func (a *API) UserURL(w http.ResponseWriter, r *http.Request) {
+	userId := util.ReadUserIDFromCtx(r.Context())
 
-	batch, err := a.store.ReadUserUrl(r.Context(), &domain.User{
+	batch, err := a.store.ReadUserURL(r.Context(), &domain.User{
 		ID: userId,
 	})
 	if err != nil {

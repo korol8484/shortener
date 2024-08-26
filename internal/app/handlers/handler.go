@@ -30,7 +30,7 @@ type Store interface {
 	Read(ctx context.Context, alias string) (*domain.URL, error)
 	ReadByURL(ctx context.Context, URL string) (*domain.URL, error)
 	AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error
-	ReadUserUrl(ctx context.Context, user *domain.User) (domain.BatchURL, error)
+	ReadUserURL(ctx context.Context, user *domain.User) (domain.BatchURL, error)
 	Close() error
 }
 
@@ -61,8 +61,8 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId := util.ReadUserIdFromCtx(r.Context())
-	if err = a.store.Add(r.Context(), ent, &domain.User{ID: userId}); err != nil {
+	userID := util.ReadUserIDFromCtx(r.Context())
+	if err = a.store.Add(r.Context(), ent, &domain.User{ID: userID}); err != nil {
 		if errors.Is(err, storage.ErrIssetURL) {
 			w.Header().Set("content-type", "text/plain; charset=utf-8")
 			w.WriteHeader(http.StatusConflict)
