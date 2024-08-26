@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/user/util"
 	"net/http"
@@ -31,8 +32,8 @@ func (a *API) UserURL(w http.ResponseWriter, r *http.Request) {
 	resp := make([]*responseURL, 0, len(batch))
 	for _, u := range batch {
 		resp = append(resp, &responseURL{
-			URL:   u.URL,
-			Alias: u.Alias,
+			URL:   fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), u.Alias),
+			Alias: u.URL,
 		})
 	}
 
