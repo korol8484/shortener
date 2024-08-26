@@ -43,6 +43,29 @@ func (m *MemStore) AddBatch(ctx context.Context, batch domain.BatchURL, user *do
 	return nil
 }
 
+func (m *MemStore) ReadUserUrl(ctx context.Context, user *domain.User) (domain.BatchURL, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var batch domain.BatchURL
+
+	aliases, ok := m.userItems[user.ID]
+	if !ok {
+		return batch, nil
+	}
+
+	for _, alias := range aliases {
+		u := m.items[alias]
+
+		batch = append(batch, &domain.URL{
+			URL:   u,
+			Alias: alias,
+		})
+	}
+
+	return batch, nil
+}
+
 func (m *MemStore) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

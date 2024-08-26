@@ -112,6 +112,10 @@ func (f *Store) AddBatch(ctx context.Context, batch domain.BatchURL, user *domai
 	return nil
 }
 
+func (f *Store) ReadUserUrl(ctx context.Context, user *domain.User) (domain.BatchURL, error) {
+	return f.baseStore.ReadUserUrl(ctx, user)
+}
+
 func (f *Store) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	return f.baseStore.Read(ctx, alias)
 }

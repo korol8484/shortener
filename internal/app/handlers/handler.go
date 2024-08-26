@@ -30,6 +30,7 @@ type Store interface {
 	Read(ctx context.Context, alias string) (*domain.URL, error)
 	ReadByURL(ctx context.Context, URL string) (*domain.URL, error)
 	AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error
+	ReadUserUrl(ctx context.Context, user *domain.User) (domain.BatchURL, error)
 	Close() error
 }
 
