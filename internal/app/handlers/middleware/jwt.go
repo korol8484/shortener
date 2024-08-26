@@ -21,7 +21,7 @@ type Jwt struct {
 	expire     time.Duration
 	userRep    UserAddRepository
 	signMethod jwt.SigningMethod
-	cookieName string
+	tokenName  string
 }
 
 type claims struct {
@@ -30,7 +30,7 @@ type claims struct {
 }
 
 var (
-	errIvalidToken = errors.New("token not valid")
+	errInvalidToken = errors.New("token not valid")
 )
 
 func NewJwt(userRep UserAddRepository) *Jwt {
@@ -39,14 +39,14 @@ func NewJwt(userRep UserAddRepository) *Jwt {
 		expire:     3 * time.Hour,
 		userRep:    userRep,
 		signMethod: jwt.SigningMethodHS256,
-		cookieName: "token",
+		tokenName:  "Authorization",
 	}
 }
 
 func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cookie, err := r.Cookie(j.cookieName)
+			cookie, err := r.Cookie(j.tokenName)
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
@@ -66,15 +66,10 @@ func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cookie, err := r.Cookie(j.cookieName)
-			if err != nil && !errors.Is(err, http.ErrNoCookie) {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+			token := r.Header.Get(j.tokenName)
 
-			if cookie == nil || cookie.Value == "" {
+			if token == "" {
 				user, err := j.setNewCookie(r.Context(), w)
-				fmt.Println(err)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -84,9 +79,9 @@ func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 				return
 			}
 
-			claim, err := j.loadClaims(cookie.Value)
+			claim, err := j.loadClaims(token)
 			if err != nil {
-				if !errors.Is(err, errIvalidToken) {
+				if !errors.Is(err, errInvalidToken) {
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
@@ -117,13 +112,8 @@ func (j *Jwt) setNewCookie(ctx context.Context, w http.ResponseWriter) (*domain.
 		return nil, err
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     j.cookieName,
-		Value:    token,
-		Path:     "/",
-		Secure:   true,
-		HttpOnly: true,
-	})
+	w.Header().Add(j.tokenName, token)
+	w.Header().Set(j.tokenName, token)
 
 	return user, nil
 }
@@ -159,7 +149,7 @@ func (j *Jwt) loadClaims(tokenStr string) (*claims, error) {
 	}
 
 	if !token.Valid {
-		return nil, errIvalidToken
+		return nil, errInvalidToken
 	}
 
 	return claims, nil
