@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"net/http"
-	"sync"
 )
 
 type batchItem struct {
@@ -22,7 +21,6 @@ type Delete struct {
 	closeChan chan struct{}
 	logger    *zap.Logger
 	batchSize int
-	wg        sync.WaitGroup
 }
 
 func NewDelete(store Store, logger *zap.Logger) (*Delete, error) {
@@ -31,7 +29,7 @@ func NewDelete(store Store, logger *zap.Logger) (*Delete, error) {
 		batchChan: make(chan batchItem, 10),
 		closeChan: make(chan struct{}),
 		logger:    logger,
-		batchSize: 10,
+		batchSize: 500,
 	}
 
 	for i := 0; i < 2; i++ {
@@ -64,8 +62,6 @@ func (d *Delete) BatchDelete(w http.ResponseWriter, r *http.Request) {
 
 func (d *Delete) Close() {
 	close(d.closeChan)
-
-	d.wg.Wait()
 }
 
 func (d *Delete) add(aliases []string, user *domain.User) {
@@ -75,7 +71,6 @@ func (d *Delete) add(aliases []string, user *domain.User) {
 			end = len(aliases)
 		}
 
-		d.wg.Add(1)
 		d.batchChan <- batchItem{
 			aliases: aliases[i:end],
 			user:    user,
@@ -90,8 +85,6 @@ func (d *Delete) process() {
 			if !ok {
 				return
 			}
-
-			d.wg.Done()
 
 			if err := d.store.BatchDelete(context.Background(), batch.aliases, batch.user); err != nil {
 				d.logger.Error(
