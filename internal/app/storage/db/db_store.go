@@ -168,13 +168,16 @@ func (s *Storage) AddBatch(ctx context.Context, batch domain.BatchURL, user *dom
 	return nil
 }
 
-func (s *Storage) BatchDelete(ctx context.Context, aliases []string, user *domain.User) error {
+func (s *Storage) BatchDelete(ctx context.Context, aliases []string, userID int64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	var (
 		placeholders []string
 		vals         []interface{}
 	)
 
-	vals = append(vals, user.ID)
+	vals = append(vals, userID)
 	for i, v := range aliases {
 		placeholders = append(placeholders, fmt.Sprintf("$%d",
 			i+2,
