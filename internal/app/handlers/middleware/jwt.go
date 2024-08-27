@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"net/http"
 	"time"
 
@@ -22,24 +23,27 @@ type Jwt struct {
 	userRep    UserAddRepository
 	signMethod jwt.SigningMethod
 	tokenName  string
+	logger     *zap.Logger
 }
 
 type claims struct {
 	jwt.RegisteredClaims
 	UserID int64 `json:"user_id,omitempty"`
+	logger *zap.Logger
 }
 
 var (
 	errInvalidToken = errors.New("token not valid")
 )
 
-func NewJwt(userRep UserAddRepository) *Jwt {
+func NewJwt(userRep UserAddRepository, logger *zap.Logger) *Jwt {
 	return &Jwt{
 		secret:     "12345dsdsdtoken",
-		expire:     3 * time.Hour,
+		expire:     100 * time.Hour,
 		userRep:    userRep,
 		signMethod: jwt.SigningMethodHS256,
 		tokenName:  "Authorization",
+		logger:     logger,
 	}
 }
 
@@ -50,6 +54,7 @@ func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 			if token == "" {
 				cToken, err := r.Cookie(j.tokenName)
 				if err != nil {
+					j.logger.Error("cookie not found")
 					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
@@ -59,6 +64,7 @@ func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 
 			claim, err := j.loadClaims(token)
 			if err != nil {
+				j.logger.Error("token not valid")
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
@@ -132,8 +138,8 @@ func (j *Jwt) setNewToken(ctx context.Context, w http.ResponseWriter) (*domain.U
 		Name:     j.tokenName,
 		Value:    token,
 		Path:     "/",
-		Secure:   true,
-		HttpOnly: true,
+		Secure:   false,
+		HttpOnly: false,
 	})
 
 	w.Header().Add(j.tokenName, token)
