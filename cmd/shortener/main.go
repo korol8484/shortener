@@ -100,8 +100,15 @@ func run(cfg *config.App, log *zap.Logger) error {
 		pingable = handlers.NewPingDummy()
 	}
 
+	dh, err := handlers.NewDelete(store, log)
+	if err != nil {
+		return err
+	}
+
+	defer dh.Close()
+
 	return http.ListenAndServe(
 		cfg.Listen,
-		handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep),
+		handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh),
 	)
 }

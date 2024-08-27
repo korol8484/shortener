@@ -168,6 +168,34 @@ func (s *Storage) AddBatch(ctx context.Context, batch domain.BatchURL, user *dom
 	return nil
 }
 
+func (s *Storage) BatchDelete(ctx context.Context, aliases []string, user *domain.User) error {
+	var (
+		placeholders []string
+		vals         []interface{}
+	)
+
+	vals = append(vals, user.ID)
+	for i, v := range aliases {
+		placeholders = append(placeholders, fmt.Sprintf("$%d",
+			i+2,
+		))
+
+		vals = append(vals, v)
+	}
+
+	up := fmt.Sprintf(
+		"UPDATE shortener s SET deleted = true FROM user_url uu WHERE s.id = uu.url_id AND uu.user_id = $1 AND s.alias IN (%s);",
+		strings.Join(placeholders, ","),
+	)
+
+	_, err := s.db.ExecContext(ctx, up, vals...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Storage) ReadUserURL(ctx context.Context, user *domain.User) (domain.BatchURL, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -203,13 +231,13 @@ func (s *Storage) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	row := s.db.QueryRowContext(ctx, "SELECT t.url, t.alias FROM public.shortener t WHERE alias = $1", alias)
+	row := s.db.QueryRowContext(ctx, "SELECT t.url, t.alias, t.deleted FROM public.shortener t WHERE alias = $1", alias)
 	if row.Err() != nil {
 		return nil, row.Err()
 	}
 
 	ent := &domain.URL{}
-	err := row.Scan(&ent.URL, &ent.Alias)
+	err := row.Scan(&ent.URL, &ent.Alias, &ent.Deleted)
 	if err != nil {
 		return nil, err
 	}
@@ -269,6 +297,11 @@ func (s *Storage) migrate(ctx context.Context) error {
 	}
 
 	_, err = tx.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS shortener_uidx_url ON shortener USING btree (url);`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, `alter table shortener add IF NOT EXISTS deleted bool default false not null;`)
 	if err != nil {
 		return err
 	}

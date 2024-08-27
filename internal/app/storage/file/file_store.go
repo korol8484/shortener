@@ -124,6 +124,10 @@ func (f *Store) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) 
 	return f.baseStore.ReadByURL(ctx, URL)
 }
 
+func (f *Store) BatchDelete(ctx context.Context, aliases []string, user *domain.User) error {
+	return nil
+}
+
 func (f *Store) Close() error {
 	return f.file.Close()
 }

@@ -31,6 +31,7 @@ type Store interface {
 	ReadByURL(ctx context.Context, URL string) (*domain.URL, error)
 	AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error
 	ReadUserURL(ctx context.Context, user *domain.User) (domain.BatchURL, error)
+	BatchDelete(ctx context.Context, aliases []string, user *domain.User) error
 	Close() error
 }
 
@@ -90,6 +91,11 @@ func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	ent, err := a.store.Read(r.Context(), alias)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if ent.Deleted {
+		w.WriteHeader(http.StatusGone)
 		return
 	}
 

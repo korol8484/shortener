@@ -93,6 +93,10 @@ func (m *MemStore) ReadByURL(ctx context.Context, URL string) (*domain.URL, erro
 	return nil, storage.ErrNotFound
 }
 
+func (m *MemStore) BatchDelete(ctx context.Context, aliases []string, user *domain.User) error {
+	return nil
+}
+
 func (m *MemStore) Close() error {
 	return nil
 }

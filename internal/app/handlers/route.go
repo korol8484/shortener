@@ -14,6 +14,7 @@ func CreateRouter(
 	logger *zap.Logger,
 	p Pingable,
 	userRep middleware.UserAddRepository,
+	deleteHandler *Delete,
 ) http.Handler {
 	api := NewAPI(store, cfg)
 	r := chi.NewRouter()
@@ -32,6 +33,7 @@ func CreateRouter(
 		r.With(jwtH.HandlerSet()).Post("/api/shorten", api.ShortenJSON)
 		r.With(jwtH.HandlerSet()).Post("/api/shorten/batch", api.ShortenBatch)
 		r.With(jwtH.HandlerRead()).Get("/api/user/urls", api.UserURL)
+		r.With(jwtH.HandlerRead()).Delete("/api/user/urls", deleteHandler.BatchDelete)
 	})
 
 	r.Get("/ping", Ping(p))
