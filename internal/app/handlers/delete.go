@@ -65,16 +65,9 @@ func (d *Delete) Close() {
 }
 
 func (d *Delete) add(aliases []string, user *domain.User) {
-	for i := 0; i < len(aliases); i += d.batchSize {
-		end := i + d.batchSize
-		if end > len(aliases) {
-			end = len(aliases)
-		}
-
-		d.batchChan <- batchItem{
-			aliases: aliases[i:end],
-			user:    user,
-		}
+	d.batchChan <- batchItem{
+		aliases: aliases,
+		user:    user,
 	}
 }
 
