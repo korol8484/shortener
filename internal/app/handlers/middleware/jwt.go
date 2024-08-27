@@ -48,8 +48,13 @@ func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token := r.Header.Get(j.tokenName)
 			if token == "" {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
+				cToken, err := r.Cookie(j.tokenName)
+				if err != nil {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+
+				token = cToken.Value
 			}
 
 			claim, err := j.loadClaims(token)
@@ -67,6 +72,17 @@ func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token := r.Header.Get(j.tokenName)
+			if token == "" {
+				cToken, err := r.Cookie(j.tokenName)
+				if err != nil && !errors.Is(err, http.ErrNoCookie) {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+
+				if cToken != nil {
+					token = cToken.Value
+				}
+			}
 
 			if token == "" {
 				user, err := j.setNewToken(r.Context(), w)
@@ -111,6 +127,14 @@ func (j *Jwt) setNewToken(ctx context.Context, w http.ResponseWriter) (*domain.U
 	if err != nil {
 		return nil, err
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     j.tokenName,
+		Value:    token,
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+	})
 
 	w.Header().Add(j.tokenName, token)
 	w.Header().Set(j.tokenName, token)
