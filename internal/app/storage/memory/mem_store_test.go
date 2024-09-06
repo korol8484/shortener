@@ -1,29 +1,28 @@
-package storage
+package memory
 
 import (
-	"github.com/korol8484/shortener/internal/app/config"
+	"context"
+	"testing"
+
 	"github.com/korol8484/shortener/internal/app/domain"
+	"github.com/korol8484/shortener/internal/app/handlers"
+	"github.com/korol8484/shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
 )
 
 func TestMemStore_Add(t *testing.T) {
-	store, err := NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
-	require.NoError(t, err)
+	store := NewMemStore()
 
-	defer func(store Store) {
+	defer func(store handlers.Store) {
 		_ = store.Close()
 	}(store)
 
-	err = store.Add(&domain.URL{
+	err := store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
 	require.NoError(t, err)
-
-	_ = os.Remove(os.TempDir() + "/test")
 }
 
 func TestMemStore_Read(t *testing.T) {
@@ -33,18 +32,13 @@ func TestMemStore_Read(t *testing.T) {
 		err   error
 	}
 
-	store, err := NewMemStore(&config.App{FileStoragePath: os.TempDir() + "/test"})
-	require.NoError(t, err)
+	store := NewMemStore()
 
-	defer func(store Store) {
+	defer func(store handlers.Store) {
 		_ = store.Close()
 	}(store)
 
-	defer func(name string) {
-		_ = os.Remove(name)
-	}(os.TempDir() + "/test")
-
-	err = store.Add(&domain.URL{
+	err := store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	})
@@ -64,7 +58,7 @@ func TestMemStore_Read(t *testing.T) {
 		{
 			name: "Alias_not_found",
 			want: want{
-				err:   ErrNotFound,
+				err:   storage.ErrNotFound,
 				alias: "7A2S",
 			},
 		},
@@ -72,7 +66,7 @@ func TestMemStore_Read(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ent, err := store.Read(test.want.alias)
+			ent, err := store.Read(context.Background(), test.want.alias)
 			if test.want.err == nil {
 				require.NoError(t, err)
 				assert.Equal(t, test.want.url, ent.URL)
