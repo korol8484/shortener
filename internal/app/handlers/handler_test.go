@@ -20,7 +20,6 @@ func TestAPI_HandleShort(t *testing.T) {
 	type want struct {
 		code        int
 		method      string
-		response    string
 		contentType string
 		body        string
 	}
@@ -96,7 +95,7 @@ func TestAPI_HandleRedirect(t *testing.T) {
 	err := api.store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
-	})
+	}, &domain.User{ID: 1})
 	require.NoError(t, err)
 
 	client := &http.Client{
