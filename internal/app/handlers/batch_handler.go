@@ -3,9 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/korol8484/shortener/internal/app/domain"
 	"io"
 	"net/http"
+
+	"github.com/korol8484/shortener/internal/app/domain"
+	"github.com/korol8484/shortener/internal/app/user/util"
 )
 
 type batchRequestItem struct {
@@ -56,7 +58,8 @@ func (a *API) ShortenBatch(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if err = a.store.AddBatch(r.Context(), batchD); err != nil {
+	userID := util.ReadUserIDFromCtx(r.Context())
+	if err = a.store.AddBatch(r.Context(), batchD, &domain.User{ID: userID}); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

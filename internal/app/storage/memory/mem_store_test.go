@@ -21,7 +21,7 @@ func TestMemStore_Add(t *testing.T) {
 	err := store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
-	})
+	}, &domain.User{ID: 1})
 	require.NoError(t, err)
 }
 
@@ -41,7 +41,7 @@ func TestMemStore_Read(t *testing.T) {
 	err := store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
-	})
+	}, &domain.User{ID: 1})
 	require.NoError(t, err)
 
 	tests := []struct {
