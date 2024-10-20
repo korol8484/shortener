@@ -26,7 +26,7 @@ func CreateRouter(
 			middleware.NewCompressor().Handler,
 		)
 
-		jwtH := middleware.NewJwt(userRep, logger)
+		jwtH := middleware.NewJwt(userRep, logger, "12345dsdsdtoken")
 
 		r.With(jwtH.HandlerSet()).Post("/", api.HandleShort)
 		r.Get("/{id}", api.HandleRedirect)

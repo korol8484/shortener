@@ -39,7 +39,11 @@ func NewDelete(store Store, logger *zap.Logger) (*Delete, error) {
 }
 
 func (d *Delete) BatchDelete(w http.ResponseWriter, r *http.Request) {
-	userID := util.ReadUserIDFromCtx(r.Context())
+	userID, ok := util.ReadUserIDFromCtx(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -61,6 +65,7 @@ func (d *Delete) BatchDelete(w http.ResponseWriter, r *http.Request) {
 
 func (d *Delete) Close() {
 	close(d.closeChan)
+	close(d.batchChan)
 }
 
 func (d *Delete) add(aliases []string, userID int64) {
@@ -93,7 +98,6 @@ func (d *Delete) process() {
 				)
 			}
 		case <-d.closeChan:
-			close(d.batchChan)
 			d.logger.Info("close delete worker")
 			return
 		}

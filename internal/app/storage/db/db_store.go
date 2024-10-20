@@ -5,11 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage"
 	"strings"
 	"sync"
-
-	"github.com/korol8484/shortener/internal/app/domain"
 )
 
 type Storage struct {
@@ -42,40 +41,30 @@ func (s *Storage) Add(ctx context.Context, ent *domain.URL, user *domain.User) e
 		}
 	}(tx)
 
-	r := tx.QueryRowContext(
-		ctx, `INSERT INTO shortener (url, alias) VALUES ($1,$2) ON CONFLICT (url) DO NOTHING RETURNING id`, ent.URL, ent.Alias,
-	)
-	if r.Err() != nil {
-		return r.Err()
-	}
-
 	var id int64
-	var isset bool
-	err = r.Scan(&id)
 
+	err = tx.QueryRowContext(
+		ctx, `INSERT INTO shortener (url, alias) VALUES ($1,$2) ON CONFLICT (url) DO NOTHING RETURNING id`, ent.URL, ent.Alias,
+	).Scan(&id)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 
+	var isset bool
 	if id < 1 {
 		isset = true
 
-		row := s.db.QueryRowContext(ctx, "SELECT t.id FROM public.shortener t WHERE url = $1", ent.URL)
-		if row.Err() != nil {
-			return row.Err()
-		}
-
-		err = row.Scan(&id)
+		err = s.db.QueryRowContext(ctx, "SELECT t.id FROM public.shortener t WHERE url = $1", ent.URL).Scan(&id)
 		if err != nil {
 			return err
 		}
 	}
 
-	ru := tx.QueryRowContext(
+	_, err = tx.ExecContext(
 		ctx, `INSERT INTO user_url (user_id, url_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, user.ID, id,
 	)
-	if ru.Err() != nil {
-		return r.Err()
+	if err != nil {
+		return err
 	}
 
 	if err = tx.Commit(); err != nil {

@@ -62,7 +62,12 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := util.ReadUserIDFromCtx(r.Context())
+	userID, ok := util.ReadUserIDFromCtx(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	if err = a.store.Add(r.Context(), ent, &domain.User{ID: userID}); err != nil {
 		if errors.Is(err, storage.ErrIssetURL) {
 			w.Header().Set("content-type", "text/plain; charset=utf-8")
@@ -102,7 +107,22 @@ func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, ent.URL, http.StatusTemporaryRedirect)
 }
 
-func (a *API) genAlias(keyLen int, shortURL string) string {
+func (a *API) shortURL(shortURL string) (*domain.URL, error) {
+	parsedURL, err := url.Parse(shortURL)
+	if err != nil {
+		return nil, err
+	}
+
+	ent := &domain.URL{
+		URL:   parsedURL.String(),
+		Alias: GenAlias(6, shortURL),
+	}
+
+	return ent, nil
+}
+
+// GenAlias - Create alias length n as a hash of the string
+func GenAlias(keyLen int, shortURL string) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 	h := fnv.New64()
@@ -116,18 +136,4 @@ func (a *API) genAlias(keyLen int, shortURL string) string {
 	}
 
 	return string(keyMap)
-}
-
-func (a *API) shortURL(shortURL string) (*domain.URL, error) {
-	parsedURL, err := url.Parse(shortURL)
-	if err != nil {
-		return nil, err
-	}
-
-	ent := &domain.URL{
-		URL:   parsedURL.String(),
-		Alias: a.genAlias(6, shortURL),
-	}
-
-	return ent, nil
 }

@@ -12,11 +12,11 @@ func SetUserIDToCtx(ctx context.Context, userID int64) context.Context {
 	return context.WithValue(ctx, keyUserID, userID)
 }
 
-func ReadUserIDFromCtx(ctx context.Context) int64 {
+func ReadUserIDFromCtx(ctx context.Context) (int64, bool) {
 	userID, ok := ctx.Value(keyUserID).(int64)
 	if !ok {
-		return 0
+		return 0, false
 	}
 
-	return userID
+	return userID, true
 }
