@@ -84,7 +84,7 @@ func (f *Store) Add(ctx context.Context, ent *domain.URL, user *domain.User) err
 	defer f.mu.Unlock()
 
 	_, err := f.baseStore.Read(ctx, ent.Alias)
-	if !errors.Is(err, storage.ErrNotFound) {
+	if err != nil && !errors.Is(err, storage.ErrNotFound) {
 		return err
 	}
 
@@ -100,9 +100,6 @@ func (f *Store) Add(ctx context.Context, ent *domain.URL, user *domain.User) err
 }
 
 func (f *Store) AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
 	for _, v := range batch {
 		if err := f.Add(ctx, v, user); err != nil {
 			return err
