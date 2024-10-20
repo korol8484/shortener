@@ -18,30 +18,30 @@ func TestSample(t *testing.T) {
 	r.Use(j.HandlerSet(), j.HandlerRead())
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("welcome"))
+		_, _ = w.Write([]byte("welcome"))
 	})
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
 	if status, resp := testRequest(t, ts, "GET", "/", nil, nil); status != 401 && resp == "welcome" {
-		t.Fatalf(resp)
+		t.Fatal(resp)
 	}
 
 	h := http.Header{}
 	h.Set("Authorization", "BEARER asdf")
 	if status, resp := testRequest(t, ts, "GET", "/", h, nil); status != 400 {
-		t.Fatalf(resp)
+		t.Fatal(resp)
 	}
 
-	jw, err := j.buildJWTString(&domain.User{1})
+	jw, err := j.buildJWTString(&domain.User{ID: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	h.Set("Authorization", "BEARER "+jw)
 	if status, resp := testRequest(t, ts, "GET", "/", h, nil); status != 200 {
-		t.Fatalf(resp)
+		t.Fatal(resp)
 	}
 }
 
