@@ -2,8 +2,9 @@ package db
 
 import (
 	"database/sql"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"time"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Config interface {
