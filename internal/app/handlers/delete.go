@@ -22,6 +22,7 @@ type Delete struct {
 	batchSize int
 }
 
+// NewDelete Factory for BatchDelete Handler
 func NewDelete(store Store, logger *zap.Logger) (*Delete, error) {
 	d := &Delete{
 		store:     store,
@@ -38,8 +39,16 @@ func NewDelete(store Store, logger *zap.Logger) (*Delete, error) {
 	return d, nil
 }
 
+// BatchDelete Handler for a collection of delete user shorten URLs
+// Accepts input json:
+// ["cbi7jn", "dyifOs"]
+// Returns: Http status Accepted
 func (d *Delete) BatchDelete(w http.ResponseWriter, r *http.Request) {
-	userID := util.ReadUserIDFromCtx(r.Context())
+	userID, ok := util.ReadUserIDFromCtx(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -61,6 +70,7 @@ func (d *Delete) BatchDelete(w http.ResponseWriter, r *http.Request) {
 
 func (d *Delete) Close() {
 	close(d.closeChan)
+	close(d.batchChan)
 }
 
 func (d *Delete) add(aliases []string, userID int64) {
@@ -93,7 +103,6 @@ func (d *Delete) process() {
 				)
 			}
 		case <-d.closeChan:
-			close(d.batchChan)
 			d.logger.Info("close delete worker")
 			return
 		}

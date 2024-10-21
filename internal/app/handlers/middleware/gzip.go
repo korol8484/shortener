@@ -14,11 +14,14 @@ var compressibleContentTypes = []string{
 	"application/json",
 }
 
+// Compressor is a middleware that compresses response
+// body of a given content types to a data format based
+// on Accept-Encoding request header.
 type Compressor struct {
 	allowedTypes map[string]struct{}
 }
 
-// NewCompressor - Для расширения типов, пока дефолтные
+// NewCompressor - Factory for GZIP middleware
 func NewCompressor() *Compressor {
 	allowedTypes := make(map[string]struct{})
 
@@ -124,6 +127,8 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
+// Handler returns a new middleware that will compress the response based on the
+// current Compressor.
 func (c *Compressor) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		baseEnc := "gzip"
