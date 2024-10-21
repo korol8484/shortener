@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -36,9 +37,9 @@ var (
 	errInvalidToken = errors.New("token not valid")
 )
 
-func NewJwt(userRep UserAddRepository, logger *zap.Logger) *Jwt {
+func NewJwt(userRep UserAddRepository, logger *zap.Logger, secret string) *Jwt {
 	return &Jwt{
-		secret:     "12345dsdsdtoken",
+		secret:     secret,
 		expire:     100 * time.Hour,
 		userRep:    userRep,
 		signMethod: jwt.SigningMethodHS256,
@@ -50,7 +51,7 @@ func NewJwt(userRep UserAddRepository, logger *zap.Logger) *Jwt {
 func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := r.Header.Get(j.tokenName)
+			token := j.tokenFromHeader(r)
 			if token == "" {
 				cToken, err := r.Cookie(j.tokenName)
 				if err != nil {
@@ -77,7 +78,7 @@ func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := r.Header.Get(j.tokenName)
+			token := j.tokenFromHeader(r)
 			if token == "" {
 				cToken, err := r.Cookie(j.tokenName)
 				if err != nil && !errors.Is(err, http.ErrNoCookie) {
@@ -183,4 +184,13 @@ func (j *Jwt) loadClaims(tokenStr string) (*claims, error) {
 	}
 
 	return claims, nil
+}
+
+func (j *Jwt) tokenFromHeader(r *http.Request) string {
+	// Get token from authorization header.
+	bearer := r.Header.Get(j.tokenName)
+	if len(bearer) > 7 && strings.ToUpper(bearer[0:6]) == "BEARER" {
+		return bearer[7:]
+	}
+	return ""
 }
