@@ -7,6 +7,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// Config Database configuration
 type Config interface {
 	GetDsn() string
 }

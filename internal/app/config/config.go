@@ -1,10 +1,15 @@
 package config
 
+// App application configuration
 type App struct {
-	Listen          string `env:"SERVER_ADDRESS"`
-	BaseShortURL    string `env:"BASE_URL"`
+	// Listen host:port on which web service will operate
+	Listen string `env:"SERVER_ADDRESS"`
+	// BaseShortURL HTTP domain append to short URL
+	BaseShortURL string `env:"BASE_URL"`
+	// FileStoragePath Path to file database
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
-	DBDsn           string `env:"DATABASE_DSN"`
+	// DBDsn Database connection string
+	DBDsn string `env:"DATABASE_DSN"`
 }
 
 func (a *App) GetBaseShortURL() string {
@@ -15,7 +20,8 @@ func (a *App) GetStoragePath() string {
 	return a.FileStoragePath
 }
 
-// GetDsn - postgresql://postgres:postgres@localhost:5432/short
+// GetDsn Database connection string:
+// Example: postgresql://postgres:postgres@localhost:5432/short
 func (a *App) GetDsn() string {
 	return a.DBDsn
 }

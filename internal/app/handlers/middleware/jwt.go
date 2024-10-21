@@ -37,6 +37,7 @@ var (
 	errInvalidToken = errors.New("token not valid")
 )
 
+// NewJwt implements a simple middleware handler for adding JWT auth.
 func NewJwt(userRep UserAddRepository, logger *zap.Logger, secret string) *Jwt {
 	return &Jwt{
 		secret:     secret,
@@ -48,6 +49,7 @@ func NewJwt(userRep UserAddRepository, logger *zap.Logger, secret string) *Jwt {
 	}
 }
 
+// HandlerRead returns a middleware that will read and validate JWT token from header or cookie
 func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -75,6 +77,7 @@ func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 	}
 }
 
+// HandlerSet returns a middleware that will set JWT token if not exist to header and cookie
 func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -21,10 +21,12 @@ const (
 	mimePlain = "text/plain"
 )
 
+// Config Return HTTP domain append to short URL
 type Config interface {
 	GetBaseShortURL() string
 }
 
+// Store Repository Interface
 type Store interface {
 	Add(ctx context.Context, ent *domain.URL, user *domain.User) error
 	Read(ctx context.Context, alias string) (*domain.URL, error)
@@ -40,10 +42,13 @@ type API struct {
 	cfg   Config
 }
 
+// NewAPI Factory
 func NewAPI(store Store, cfg Config) *API {
 	return &API{store: store, cfg: cfg}
 }
 
+// HandleShort Handler for one URL requested at plain text
+// Response text/plain short URL
 func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -85,6 +90,8 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)))
 }
 
+// HandleRedirect Handler plain text alias
+// Response HTTP redirect to short URL
 func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	alias := chi.URLParam(r, "id")
 
