@@ -1,3 +1,4 @@
+// Package storage errors for storage
 package storage
 
 import (
