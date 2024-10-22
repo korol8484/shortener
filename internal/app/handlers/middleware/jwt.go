@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -13,10 +14,12 @@ import (
 	"github.com/korol8484/shortener/internal/app/user/util"
 )
 
+// UserAddRepository - jwt user repository contract
 type UserAddRepository interface {
 	NewUser(ctx context.Context) (*domain.User, error)
 }
 
+// Jwt middleware
 type Jwt struct {
 	secret     string
 	expire     time.Duration
@@ -36,9 +39,10 @@ var (
 	errInvalidToken = errors.New("token not valid")
 )
 
-func NewJwt(userRep UserAddRepository, logger *zap.Logger) *Jwt {
+// NewJwt implements a simple middleware handler for adding JWT auth.
+func NewJwt(userRep UserAddRepository, logger *zap.Logger, secret string) *Jwt {
 	return &Jwt{
-		secret:     "12345dsdsdtoken",
+		secret:     secret,
 		expire:     100 * time.Hour,
 		userRep:    userRep,
 		signMethod: jwt.SigningMethodHS256,
@@ -47,10 +51,11 @@ func NewJwt(userRep UserAddRepository, logger *zap.Logger) *Jwt {
 	}
 }
 
+// HandlerRead returns a middleware that will read and validate JWT token from header or cookie
 func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := r.Header.Get(j.tokenName)
+			token := j.tokenFromHeader(r)
 			if token == "" {
 				cToken, err := r.Cookie(j.tokenName)
 				if err != nil {
@@ -74,10 +79,11 @@ func (j *Jwt) HandlerRead() func(next http.Handler) http.Handler {
 	}
 }
 
+// HandlerSet returns a middleware that will set JWT token if not exist to header and cookie
 func (j *Jwt) HandlerSet() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := r.Header.Get(j.tokenName)
+			token := j.tokenFromHeader(r)
 			if token == "" {
 				cToken, err := r.Cookie(j.tokenName)
 				if err != nil && !errors.Is(err, http.ErrNoCookie) {
@@ -183,4 +189,13 @@ func (j *Jwt) loadClaims(tokenStr string) (*claims, error) {
 	}
 
 	return claims, nil
+}
+
+func (j *Jwt) tokenFromHeader(r *http.Request) string {
+	// Get token from authorization header.
+	bearer := r.Header.Get(j.tokenName)
+	if len(bearer) > 7 && strings.ToUpper(bearer[0:6]) == "BEARER" {
+		return bearer[7:]
+	}
+	return ""
 }

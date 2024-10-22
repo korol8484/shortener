@@ -5,6 +5,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// NewLogger Zap logger factory
 func NewLogger(debug bool) (*zap.Logger, error) {
 	zCfg := zap.Config{
 		Level:    zap.NewAtomicLevelAt(zap.InfoLevel),

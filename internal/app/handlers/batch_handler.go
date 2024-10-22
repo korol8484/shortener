@@ -20,9 +20,23 @@ type batchResponseItem struct {
 	URL string `json:"short_url"`
 }
 
-type batchRequest []*batchRequestItem
-type batchResponse []*batchResponseItem
+type batchRequest []batchRequestItem
+type batchResponse []batchResponseItem
 
+// ShortenBatch Handler for a collection of shortened links
+// Accepts input json:
+//
+//	[{
+//	    "correlation_id": "id",
+//	    "original_url": "http://www.ya.ru"
+//	}]
+//
+// Returns:
+//
+//	[{
+//	    "correlation_id": "id",
+//	    "short_url": "http://localhost:8080/ZyNJrg"
+//	}]
 func (a *API) ShortenBatch(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -52,13 +66,18 @@ func (a *API) ShortenBatch(w http.ResponseWriter, r *http.Request) {
 		}
 
 		batchD = append(batchD, ent)
-		batchR = append(batchR, &batchResponseItem{
+		batchR = append(batchR, batchResponseItem{
 			ID:  v.ID,
 			URL: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias),
 		})
 	}
 
-	userID := util.ReadUserIDFromCtx(r.Context())
+	userID, ok := util.ReadUserIDFromCtx(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	if err = a.store.AddBatch(r.Context(), batchD, &domain.User{ID: userID}); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return

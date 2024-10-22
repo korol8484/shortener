@@ -1,22 +1,43 @@
-package memory
+package file
 
 import (
 	"context"
-	"testing"
-
+	"github.com/google/uuid"
 	"github.com/korol8484/shortener/internal/app/domain"
-	"github.com/korol8484/shortener/internal/app/handlers"
 	"github.com/korol8484/shortener/internal/app/storage"
+	"github.com/korol8484/shortener/internal/app/storage/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"os"
+	"path"
+	"testing"
 )
 
-func TestMemStore_Add(t *testing.T) {
-	store := NewMemStore()
+type storeCfg string
 
-	defer func(store handlers.Store) {
+func (s storeCfg) GetStoragePath() string {
+	return string(s)
+}
+
+func getStore(t *testing.T) (*Store, string) {
+	storePath := path.Join(os.TempDir(), uuid.NewString())
+
+	store, err := NewFileStore(storeCfg(storePath), memory.NewMemStore())
+	require.NoError(t, err)
+
+	_, err = os.Stat(storePath)
+	require.NoError(t, err)
+
+	return store, storePath
+}
+
+func TestStore_Add(t *testing.T) {
+	store, dPath := getStore(t)
+
+	defer func() {
 		_ = store.Close()
-	}(store)
+		_ = os.Remove(dPath)
+	}()
 
 	err := store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
@@ -47,19 +68,19 @@ func TestMemStore_Add(t *testing.T) {
 	require.ErrorIs(t, storage.ErrIssetURL, err)
 }
 
-func TestMemStore_Read(t *testing.T) {
+func TestStore_Read(t *testing.T) {
+	store, dPath := getStore(t)
+
+	defer func() {
+		_ = store.Close()
+		_ = os.Remove(dPath)
+	}()
+
 	type want struct {
 		alias string
 		url   string
 		err   error
 	}
-
-	store := NewMemStore()
-
-	defer func(store handlers.Store) {
-		_ = store.Close()
-	}(store)
-
 	err := store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
@@ -101,11 +122,13 @@ func TestMemStore_Read(t *testing.T) {
 	}
 }
 
-func TestMemStore_ReadUserURL(t *testing.T) {
-	store := NewMemStore()
-	defer func(store handlers.Store) {
+func TestStore_ReadUserURL(t *testing.T) {
+	store, dPath := getStore(t)
+
+	defer func() {
 		_ = store.Close()
-	}(store)
+		_ = os.Remove(dPath)
+	}()
 
 	user := &domain.User{ID: 1}
 
@@ -125,11 +148,13 @@ func TestMemStore_ReadUserURL(t *testing.T) {
 	require.Len(t, userURL, 0)
 }
 
-func TestMemStore_ReadByURL(t *testing.T) {
-	store := NewMemStore()
-	defer func(store handlers.Store) {
+func TestStore_ReadByURL(t *testing.T) {
+	store, dPath := getStore(t)
+
+	defer func() {
 		_ = store.Close()
-	}(store)
+		_ = os.Remove(dPath)
+	}()
 
 	err := store.Add(context.Background(), &domain.URL{URL: "http://www.ya.ru", Alias: "7A2S4z"}, &domain.User{ID: 1})
 	require.NoError(t, err)
@@ -142,27 +167,4 @@ func TestMemStore_ReadByURL(t *testing.T) {
 
 	_, err = store.ReadByURL(context.Background(), "http://www.ya1.ru")
 	require.ErrorIs(t, err, storage.ErrNotFound)
-}
-
-func TestMemStore_BatchDelete(t *testing.T) {
-	store := NewMemStore()
-	defer func(store handlers.Store) {
-		_ = store.Close()
-	}(store)
-
-	user := &domain.User{ID: 1}
-
-	err := store.Add(context.Background(), &domain.URL{URL: "http://www.ya.ru", Alias: "7A2S4z"}, user)
-	require.NoError(t, err)
-
-	err = store.BatchDelete(context.Background(), []string{"7A2S4z"}, user.ID)
-	require.NoError(t, err)
-
-	userURL, err := store.ReadUserURL(context.Background(), user)
-	require.NoError(t, err)
-	require.Len(t, userURL, 1)
-
-	assert.Equal(t, "http://www.ya.ru", userURL[0].URL)
-	assert.Equal(t, "7A2S4z", userURL[0].Alias)
-	assert.Equal(t, true, userURL[0].Deleted)
 }
