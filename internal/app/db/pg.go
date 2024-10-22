@@ -12,6 +12,7 @@ type Config interface {
 	GetDsn() string
 }
 
+// NewPgDB postgresql connection factory
 func NewPgDB(cfg Config) (*sql.DB, error) {
 	db, err := sql.Open("pgx", cfg.GetDsn())
 	if err != nil {

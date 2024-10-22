@@ -37,6 +37,7 @@ type Store interface {
 	Close() error
 }
 
+// API api handler
 type API struct {
 	store Store
 	cfg   Config
