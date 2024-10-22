@@ -13,6 +13,7 @@ type item struct {
 	deleted bool
 }
 
+// MemStore - in memory shorten links storage
 type MemStore struct {
 	mu           sync.RWMutex
 	items        map[string]item
@@ -20,6 +21,7 @@ type MemStore struct {
 	deletedItems map[int64]map[string]interface{}
 }
 
+// NewMemStore in memory shorten links storage factory
 func NewMemStore() *MemStore {
 	store := &MemStore{
 		items:        make(map[string]item),
@@ -30,6 +32,7 @@ func NewMemStore() *MemStore {
 	return store
 }
 
+// Add save shorten URL
 func (m *MemStore) Add(ctx context.Context, ent *domain.URL, user *domain.User) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -44,6 +47,7 @@ func (m *MemStore) Add(ctx context.Context, ent *domain.URL, user *domain.User) 
 	return nil
 }
 
+// AddBatch save shorten collection URL
 func (m *MemStore) AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error {
 	for _, v := range batch {
 		if err := m.Add(ctx, v, user); err != nil {
@@ -54,6 +58,7 @@ func (m *MemStore) AddBatch(ctx context.Context, batch domain.BatchURL, user *do
 	return nil
 }
 
+// ReadUserURL read user shorten URL
 func (m *MemStore) ReadUserURL(ctx context.Context, user *domain.User) (domain.BatchURL, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -87,6 +92,7 @@ func (m *MemStore) ReadUserURL(ctx context.Context, user *domain.User) (domain.B
 	return batch, nil
 }
 
+// Read - read shorten URL
 func (m *MemStore) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -98,6 +104,7 @@ func (m *MemStore) Read(ctx context.Context, alias string) (*domain.URL, error) 
 	return &domain.URL{Alias: alias, URL: m.items[alias].URL, Deleted: m.items[alias].deleted}, nil
 }
 
+// ReadByURL read shorten URL by URL
 func (m *MemStore) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -114,6 +121,7 @@ func (m *MemStore) ReadByURL(ctx context.Context, URL string) (*domain.URL, erro
 	return nil, storage.ErrNotFound
 }
 
+// BatchDelete delete shorten collection URL
 func (m *MemStore) BatchDelete(ctx context.Context, aliases []string, userID int64) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -129,6 +137,7 @@ func (m *MemStore) BatchDelete(ctx context.Context, aliases []string, userID int
 	return nil
 }
 
+// Close - clear store resources
 func (m *MemStore) Close() error {
 	return nil
 }

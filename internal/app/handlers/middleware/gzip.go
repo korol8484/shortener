@@ -59,6 +59,7 @@ func (c *compressWriter) isCompressible() bool {
 	return false
 }
 
+// WriteHeader gzip header interceptor
 func (c *compressWriter) WriteHeader(code int) {
 	c.writeHeader = true
 	defer c.ResponseWriter.WriteHeader(code)
@@ -79,6 +80,7 @@ func (c *compressWriter) WriteHeader(code int) {
 	c.Header().Del("Content-Length")
 }
 
+// Write gzip writes the data to the connection as part of an HTTP reply.
 func (c *compressWriter) Write(p []byte) (int, error) {
 	if !c.writeHeader {
 		c.WriteHeader(http.StatusOK)
@@ -95,6 +97,7 @@ func (c *compressWriter) writer() io.Writer {
 	return c.ResponseWriter
 }
 
+// Close is the interface that wraps the basic Close method.
 func (c *compressWriter) Close() error {
 	if c, ok := c.writer().(io.WriteCloser); ok {
 		return c.Close()
@@ -115,10 +118,12 @@ func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	}, nil
 }
 
+// Read gzip header interceptor
 func (c *compressReader) Read(p []byte) (n int, err error) {
 	return c.zr.Read(p)
 }
 
+// Close is the interface that wraps the basic Close method.
 func (c *compressReader) Close() error {
 	if err := c.r.Close(); err != nil {
 		return err

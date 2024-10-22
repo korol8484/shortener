@@ -20,6 +20,18 @@ type response struct {
 	Result string `json:"result"`
 }
 
+// ShortenJSON Handler for json shortened link
+// Accepts input json:
+//
+//	{
+//	    "url": "http://www.ya.ru"
+//	}
+//
+// Returns:
+//
+//	{
+//	    "result": "http://localhost:8080/ZyNJrg"
+//	}
 func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

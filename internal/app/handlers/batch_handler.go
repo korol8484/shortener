@@ -25,23 +25,18 @@ type batchResponse []batchResponseItem
 
 // ShortenBatch Handler for a collection of shortened links
 // Accepts input json:
-// [
 //
-//	{
+//	[{
 //	    "correlation_id": "id",
 //	    "original_url": "http://www.ya.ru"
-//	}
+//	}]
 //
-// ]
 // Returns:
-// [
 //
-//	{
+//	[{
 //	    "correlation_id": "id",
 //	    "short_url": "http://localhost:8080/ZyNJrg"
-//	}
-//
-// ]
+//	}]
 func (a *API) ShortenBatch(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

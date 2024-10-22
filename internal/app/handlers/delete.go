@@ -14,6 +14,7 @@ type batchItem struct {
 	user    int64
 }
 
+// Delete BatchDelete Handler
 type Delete struct {
 	store     Store
 	batchChan chan batchItem
@@ -68,6 +69,7 @@ func (d *Delete) BatchDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+// Close - close resources
 func (d *Delete) Close() {
 	close(d.closeChan)
 	close(d.batchChan)

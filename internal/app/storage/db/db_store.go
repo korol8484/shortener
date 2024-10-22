@@ -11,11 +11,13 @@ import (
 	"sync"
 )
 
+// Storage - Db storage
 type Storage struct {
 	mu sync.RWMutex
 	db *sql.DB
 }
 
+// NewStorage - DB storage Factory
 func NewStorage(db *sql.DB) (*Storage, error) {
 	st := &Storage{db: db}
 
@@ -27,6 +29,7 @@ func NewStorage(db *sql.DB) (*Storage, error) {
 	return st, nil
 }
 
+// Add save shorten URL
 func (s *Storage) Add(ctx context.Context, ent *domain.URL, user *domain.User) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -78,6 +81,7 @@ func (s *Storage) Add(ctx context.Context, ent *domain.URL, user *domain.User) e
 	return nil
 }
 
+// AddBatch save shorten collection URL
 func (s *Storage) AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -157,6 +161,7 @@ func (s *Storage) AddBatch(ctx context.Context, batch domain.BatchURL, user *dom
 	return nil
 }
 
+// BatchDelete delete shorten collection URL
 func (s *Storage) BatchDelete(ctx context.Context, aliases []string, userID int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -188,6 +193,7 @@ func (s *Storage) BatchDelete(ctx context.Context, aliases []string, userID int6
 	return nil
 }
 
+// ReadUserURL read user shorten URL
 func (s *Storage) ReadUserURL(ctx context.Context, user *domain.User) (domain.BatchURL, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -219,6 +225,7 @@ func (s *Storage) ReadUserURL(ctx context.Context, user *domain.User) (domain.Ba
 	return batch, nil
 }
 
+// Read - read shorten URL
 func (s *Storage) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -237,6 +244,7 @@ func (s *Storage) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	return ent, nil
 }
 
+// ReadByURL read shorten URL by URL
 func (s *Storage) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -255,8 +263,9 @@ func (s *Storage) ReadByURL(ctx context.Context, URL string) (*domain.URL, error
 	return ent, nil
 }
 
+// Close - close db
 func (s *Storage) Close() error {
-	return nil
+	return s.db.Close()
 }
 
 func (s *Storage) migrate(ctx context.Context) error {

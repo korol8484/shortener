@@ -14,10 +14,12 @@ import (
 	"github.com/korol8484/shortener/internal/app/user/util"
 )
 
+// UserAddRepository - jwt user repository contract
 type UserAddRepository interface {
 	NewUser(ctx context.Context) (*domain.User, error)
 }
 
+// Jwt middleware
 type Jwt struct {
 	secret     string
 	expire     time.Duration

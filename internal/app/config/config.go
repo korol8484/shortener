@@ -12,10 +12,12 @@ type App struct {
 	DBDsn string `env:"DATABASE_DSN"`
 }
 
+// GetBaseShortURL return HTTP domain, append to short URL
 func (a *App) GetBaseShortURL() string {
 	return a.BaseShortURL
 }
 
+// GetStoragePath Path to file database
 func (a *App) GetStoragePath() string {
 	return a.FileStoragePath
 }

@@ -13,6 +13,13 @@ type responseURL struct {
 	Alias string `json:"original_url"`
 }
 
+// UserURL Handler for list user shortened links
+// Returns:
+//
+//	[{
+//	    "short_url": "http://localhost:8080/ZyNJrg",
+//		"original_url": "http://ya.ru"
+//	}]
 func (a *API) UserURL(w http.ResponseWriter, r *http.Request) {
 	userID, ok := util.ReadUserIDFromCtx(r.Context())
 	if !ok {
