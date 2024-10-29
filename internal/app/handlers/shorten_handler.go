@@ -20,6 +20,18 @@ type response struct {
 	Result string `json:"result"`
 }
 
+// ShortenJSON Handler for json shortened link
+// Accepts input json:
+//
+//	{
+//	    "url": "http://www.ya.ru"
+//	}
+//
+// Returns:
+//
+//	{
+//	    "result": "http://localhost:8080/ZyNJrg"
+//	}
 func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -45,7 +57,12 @@ func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := util.ReadUserIDFromCtx(r.Context())
+	userID, ok := util.ReadUserIDFromCtx(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	if err = a.store.Add(r.Context(), ent, &domain.User{ID: userID}); err != nil {
 		if errors.Is(err, storage.ErrIssetURL) {
 			res := &response{Result: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)}
