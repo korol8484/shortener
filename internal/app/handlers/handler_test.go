@@ -2,21 +2,24 @@ package handlers
 
 import (
 	"context"
-	"github.com/korol8484/shortener/internal/app/handlers/middleware"
-	"github.com/korol8484/shortener/internal/app/user/storage"
-	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
+	"go.uber.org/zap"
+
+	"github.com/korol8484/shortener/internal/app/handlers/middleware"
+	"github.com/korol8484/shortener/internal/app/user/storage"
+
 	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage/memory"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestAPI_HandleShort(t *testing.T) {

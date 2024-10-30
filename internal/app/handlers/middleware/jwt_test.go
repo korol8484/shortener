@@ -1,14 +1,16 @@
 package middleware
 
 import (
-	"github.com/go-chi/chi/v5"
-	"github.com/korol8484/shortener/internal/app/domain"
-	"github.com/korol8484/shortener/internal/app/user/storage"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+
+	"github.com/korol8484/shortener/internal/app/domain"
+	"github.com/korol8484/shortener/internal/app/user/storage"
 )
 
 func TestSample(t *testing.T) {

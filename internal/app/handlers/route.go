@@ -4,8 +4,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/korol8484/shortener/internal/app/handlers/middleware"
 	"go.uber.org/zap"
+
+	"github.com/korol8484/shortener/internal/app/handlers/middleware"
 )
 
 // CreateRouter create HTTP router, register endpoints using chi

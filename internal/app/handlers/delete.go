@@ -3,10 +3,12 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"github.com/korol8484/shortener/internal/app/user/util"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
+
+	"go.uber.org/zap"
+
+	"github.com/korol8484/shortener/internal/app/user/util"
 )
 
 type batchItem struct {

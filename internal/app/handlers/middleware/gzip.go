@@ -3,10 +3,11 @@ package middleware
 import (
 	"compress/gzip"
 	"errors"
-	"github.com/korol8484/shortener/internal/app/util"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/korol8484/shortener/internal/app/util"
 )
 
 var compressibleContentTypes = []string{

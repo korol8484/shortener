@@ -2,15 +2,17 @@ package file
 
 import (
 	"context"
-	"github.com/google/uuid"
-	"github.com/korol8484/shortener/internal/app/domain"
-	"github.com/korol8484/shortener/internal/app/storage"
-	"github.com/korol8484/shortener/internal/app/storage/memory"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/korol8484/shortener/internal/app/domain"
+	"github.com/korol8484/shortener/internal/app/storage"
+	"github.com/korol8484/shortener/internal/app/storage/memory"
 )
 
 type storeCfg string

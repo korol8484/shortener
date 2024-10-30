@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"net/http"
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/user/util"
 )
