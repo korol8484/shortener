@@ -8,12 +8,18 @@ import (
 	"strings"
 	"testing"
 
+	"go.uber.org/zap"
+
+	"github.com/korol8484/shortener/internal/app/handlers/middleware"
+	"github.com/korol8484/shortener/internal/app/user/storage"
+
 	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage/memory"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestAPI_HandleShort(t *testing.T) {
@@ -47,6 +53,9 @@ func TestAPI_HandleShort(t *testing.T) {
 	router := chi.NewRouter()
 	srv := httptest.NewServer(router)
 	defer srv.Close()
+
+	j := middleware.NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+	router.Use(j.HandlerSet())
 
 	store := memory.NewMemStore()
 
@@ -168,6 +177,9 @@ func TestAPI_ShortenJson(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
+	j := middleware.NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+	router.Use(j.HandlerSet())
+
 	store := memory.NewMemStore()
 
 	defer func(store Store) {
@@ -204,6 +216,12 @@ func TestAPI_ShortenJson(t *testing.T) {
 			code:   400,
 			body:   "{\"url\": \"https__://practicum.yandex.ru\"}",
 		}},
+		{name: "success_ya_isset_url", want: want{
+			method:      http.MethodPost,
+			code:        409,
+			contentType: "application/json",
+			body:        "{\"url\": \"https://practicum.yandex.ru\"}",
+		}},
 	}
 
 	for _, test := range tests {
@@ -222,5 +240,11 @@ func TestAPI_ShortenJson(t *testing.T) {
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
 		})
+	}
+}
+
+func BenchmarkGenAlias(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GenAlias(5, "https://ya.ru")
 	}
 }

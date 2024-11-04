@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"go.uber.org/zap"
 	"net/http"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type writer struct {
@@ -55,6 +56,7 @@ func LoggResponse(logger *zap.Logger) func(next http.Handler) http.Handler {
 	}
 }
 
+// WriteHeader jwt interceptor
 func (w *writer) WriteHeader(code int) {
 	if !w.wroteHeader {
 		w.code = code
@@ -63,6 +65,7 @@ func (w *writer) WriteHeader(code int) {
 	}
 }
 
+// Write jwt interceptor, writes number of bytes send out body
 func (w *writer) Write(buf []byte) (n int, err error) {
 	n, err = w.ResponseWriter.Write(buf)
 	w.bytes += n

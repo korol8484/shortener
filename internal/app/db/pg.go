@@ -2,14 +2,17 @@ package db
 
 import (
 	"database/sql"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"time"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// Config Database configuration
 type Config interface {
 	GetDsn() string
 }
 
+// NewPgDB postgresql connection factory
 func NewPgDB(cfg Config) (*sql.DB, error) {
 	db, err := sql.Open("pgx", cfg.GetDsn())
 	if err != nil {

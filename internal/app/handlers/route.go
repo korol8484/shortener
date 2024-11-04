@@ -4,10 +4,22 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/korol8484/shortener/internal/app/handlers/middleware"
 	"go.uber.org/zap"
+
+	"github.com/korol8484/shortener/internal/app/handlers/middleware"
 )
 
+// CreateRouter create HTTP router, register endpoints using chi
+// @title			Shortener API
+// @version		1.0
+// @description	Golang service
+// @termsOfService	http://swagger.io/terms/
+// @contact.name	API Support
+// @contact.url	https://localhost:8080
+// @contact.email	info@localhost.ru
+//
+// @host			http://localhost:8080
+// @BasePath		/
 func CreateRouter(
 	store Store,
 	cfg Config,
@@ -26,7 +38,7 @@ func CreateRouter(
 			middleware.NewCompressor().Handler,
 		)
 
-		jwtH := middleware.NewJwt(userRep, logger)
+		jwtH := middleware.NewJwt(userRep, logger, "12345dsdsdtoken")
 
 		r.With(jwtH.HandlerSet()).Post("/", api.HandleShort)
 		r.Get("/{id}", api.HandleRedirect)

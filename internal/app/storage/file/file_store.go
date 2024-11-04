@@ -11,13 +11,13 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/handlers"
 	"github.com/korol8484/shortener/internal/app/storage"
 )
 
-// &config.App{FileStoragePath: os.TempDir() + "/test"}
-
+// Config - file storage config interface
 type Config interface {
 	GetStoragePath() string
 }
@@ -29,12 +29,14 @@ type storeEntity struct {
 	UserID int64  `json:"user_id,omitempty"`
 }
 
+// Store - file storage
 type Store struct {
 	mu        sync.RWMutex
 	file      *os.File
 	baseStore handlers.Store
 }
 
+// NewFileStore - file storage factory
 func NewFileStore(config Config, base handlers.Store) (*Store, error) {
 	file, err := create(config.GetStoragePath())
 	if err != nil {
@@ -79,12 +81,13 @@ func (f *Store) load() error {
 	return nil
 }
 
+// Add save shorten URL
 func (f *Store) Add(ctx context.Context, ent *domain.URL, user *domain.User) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	_, err := f.baseStore.Read(ctx, ent.Alias)
-	if !errors.Is(err, storage.ErrNotFound) {
+	if err != nil && !errors.Is(err, storage.ErrNotFound) {
 		return err
 	}
 
@@ -99,10 +102,8 @@ func (f *Store) Add(ctx context.Context, ent *domain.URL, user *domain.User) err
 	return nil
 }
 
+// AddBatch save shorten collection URL
 func (f *Store) AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
 	for _, v := range batch {
 		if err := f.Add(ctx, v, user); err != nil {
 			return err
@@ -112,22 +113,27 @@ func (f *Store) AddBatch(ctx context.Context, batch domain.BatchURL, user *domai
 	return nil
 }
 
+// ReadUserURL read user shorten URL
 func (f *Store) ReadUserURL(ctx context.Context, user *domain.User) (domain.BatchURL, error) {
 	return f.baseStore.ReadUserURL(ctx, user)
 }
 
+// Read - read shorten URL
 func (f *Store) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	return f.baseStore.Read(ctx, alias)
 }
 
+// ReadByURL read shorten URL by URL
 func (f *Store) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) {
 	return f.baseStore.ReadByURL(ctx, URL)
 }
 
+// BatchDelete delete shorten collection URL
 func (f *Store) BatchDelete(ctx context.Context, aliases []string, userID int64) error {
 	return nil
 }
 
+// Close - close file store
 func (f *Store) Close() error {
 	return f.file.Close()
 }

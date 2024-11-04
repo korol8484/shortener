@@ -3,9 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/user/util"
-	"net/http"
 )
 
 type responseURL struct {
@@ -13,8 +14,19 @@ type responseURL struct {
 	Alias string `json:"original_url"`
 }
 
+// UserURL Handler for list user shortened links
+// Returns:
+//
+//	[{
+//	    "short_url": "http://localhost:8080/ZyNJrg",
+//		"original_url": "http://ya.ru"
+//	}]
 func (a *API) UserURL(w http.ResponseWriter, r *http.Request) {
-	userID := util.ReadUserIDFromCtx(r.Context())
+	userID, ok := util.ReadUserIDFromCtx(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	batch, err := a.store.ReadUserURL(r.Context(), &domain.User{
 		ID: userID,

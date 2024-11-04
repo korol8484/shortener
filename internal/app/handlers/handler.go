@@ -11,6 +11,7 @@ import (
 	"net/url"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage"
 	"github.com/korol8484/shortener/internal/app/user/util"
@@ -21,10 +22,12 @@ const (
 	mimePlain = "text/plain"
 )
 
+// Config Return HTTP domain append to short URL
 type Config interface {
 	GetBaseShortURL() string
 }
 
+// Store Repository Interface
 type Store interface {
 	Add(ctx context.Context, ent *domain.URL, user *domain.User) error
 	Read(ctx context.Context, alias string) (*domain.URL, error)
@@ -35,15 +38,19 @@ type Store interface {
 	Close() error
 }
 
+// API api handler
 type API struct {
 	store Store
 	cfg   Config
 }
 
+// NewAPI Factory
 func NewAPI(store Store, cfg Config) *API {
 	return &API{store: store, cfg: cfg}
 }
 
+// HandleShort Handler for one URL requested at plain text
+// Response text/plain short URL
 func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -62,7 +69,12 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := util.ReadUserIDFromCtx(r.Context())
+	userID, ok := util.ReadUserIDFromCtx(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	if err = a.store.Add(r.Context(), ent, &domain.User{ID: userID}); err != nil {
 		if errors.Is(err, storage.ErrIssetURL) {
 			w.Header().Set("content-type", "text/plain; charset=utf-8")
@@ -80,6 +92,8 @@ func (a *API) HandleShort(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)))
 }
 
+// HandleRedirect Handler plain text alias
+// Response HTTP redirect to short URL
 func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	alias := chi.URLParam(r, "id")
 
@@ -102,7 +116,22 @@ func (a *API) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, ent.URL, http.StatusTemporaryRedirect)
 }
 
-func (a *API) genAlias(keyLen int, shortURL string) string {
+func (a *API) shortURL(shortURL string) (*domain.URL, error) {
+	parsedURL, err := url.Parse(shortURL)
+	if err != nil {
+		return nil, err
+	}
+
+	ent := &domain.URL{
+		URL:   parsedURL.String(),
+		Alias: GenAlias(6, shortURL),
+	}
+
+	return ent, nil
+}
+
+// GenAlias - Create alias length n as a hash of the string
+func GenAlias(keyLen int, shortURL string) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 	h := fnv.New64()
@@ -116,18 +145,4 @@ func (a *API) genAlias(keyLen int, shortURL string) string {
 	}
 
 	return string(keyMap)
-}
-
-func (a *API) shortURL(shortURL string) (*domain.URL, error) {
-	parsedURL, err := url.Parse(shortURL)
-	if err != nil {
-		return nil, err
-	}
-
-	ent := &domain.URL{
-		URL:   parsedURL.String(),
-		Alias: a.genAlias(6, shortURL),
-	}
-
-	return ent, nil
 }

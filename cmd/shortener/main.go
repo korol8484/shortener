@@ -9,6 +9,8 @@ import (
 	"path"
 
 	"github.com/caarlos0/env/v11"
+	"go.uber.org/zap"
+
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/db"
 	"github.com/korol8484/shortener/internal/app/handlers"
@@ -18,7 +20,6 @@ import (
 	"github.com/korol8484/shortener/internal/app/storage/file"
 	"github.com/korol8484/shortener/internal/app/storage/memory"
 	userDBStore "github.com/korol8484/shortener/internal/app/user/storage"
-	"go.uber.org/zap"
 )
 
 func main() {

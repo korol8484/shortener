@@ -8,11 +8,13 @@ import (
 	"github.com/korol8484/shortener/internal/app/domain"
 )
 
+// DBStorage User storage
 type DBStorage struct {
 	mu sync.RWMutex
 	db *sql.DB
 }
 
+// NewStorage - User storage factory
 func NewStorage(db *sql.DB) (*DBStorage, error) {
 	storage := &DBStorage{db: db}
 
@@ -24,6 +26,7 @@ func NewStorage(db *sql.DB) (*DBStorage, error) {
 	return storage, nil
 }
 
+// NewUser - Create new user in DB
 func (d *DBStorage) NewUser(ctx context.Context) (*domain.User, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
