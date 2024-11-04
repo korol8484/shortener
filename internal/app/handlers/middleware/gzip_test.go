@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"bytes"
 	"compress/gzip"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -135,4 +137,28 @@ func decodeResponseBody(t *testing.T, resp *http.Response) string {
 	reader.Close()
 
 	return string(respBody)
+}
+
+func TestCompressReader(t *testing.T) {
+	in := bytes.NewReader([]byte{
+		0x1f, 0x8b, 0x08, 0x08, 0xf7, 0x5e, 0x14, 0x4a,
+		0x00, 0x03, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x2e,
+		0x74, 0x78, 0x74, 0x00, 0x03, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	})
+
+	rd, err := newCompressReader(io.NopCloser(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = rd.Read(make([]byte, 20))
+	if err != nil && !errors.Is(err, io.EOF) {
+		t.Fatal(err)
+	}
+
+	err = rd.Close()
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatal(err)
+	}
 }
