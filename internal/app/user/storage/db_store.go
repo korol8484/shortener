@@ -32,7 +32,7 @@ func (d *DBStorage) NewUser(ctx context.Context) (*domain.User, error) {
 	defer d.mu.Unlock()
 
 	r := d.db.QueryRowContext(
-		ctx, `INSERT INTO public."user" (id) VALUES (DEFAULT) returning id;`,
+		ctx, `INSERT INTO "user" (id) VALUES (DEFAULT) returning id;`,
 	)
 	if r.Err() != nil {
 		return nil, r.Err()
@@ -62,7 +62,7 @@ func (d *DBStorage) migrate(ctx context.Context) error {
 	}(tx)
 
 	_, err = tx.ExecContext(ctx, `
-	create table if not exists public.user
+	create table if not exists "user"
 	(
 		id    bigserial
 			constraint user_pk

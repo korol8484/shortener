@@ -65,9 +65,9 @@ func run(cfg *config.App, log *zap.Logger) error {
 	var jwtUserRep middleware.UserAddRepository
 
 	if cfg.DBDsn != "" {
-		dbConn, err := db.NewPgDB(cfg)
-		if err != nil {
-			return err
+		dbConn, dbErr := db.NewPgDB(cfg)
+		if dbErr != nil {
+			return dbErr
 		}
 
 		pingable = dbConn
