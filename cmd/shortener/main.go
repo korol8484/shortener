@@ -23,6 +23,7 @@ import (
 	userDBStore "github.com/korol8484/shortener/internal/app/user/storage"
 )
 
+// Build variables
 var (
 	// BuildVersion - version
 	BuildVersion string = "N/A"
