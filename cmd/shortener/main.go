@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -20,6 +21,12 @@ import (
 	"github.com/korol8484/shortener/internal/app/storage/file"
 	"github.com/korol8484/shortener/internal/app/storage/memory"
 	userDBStore "github.com/korol8484/shortener/internal/app/user/storage"
+)
+
+var (
+	BuildVersion string = "N/A"
+	BuildDate    string = "N/A"
+	BuildCommit  string = "N/A"
 )
 
 func main() {
@@ -65,9 +72,9 @@ func run(cfg *config.App, log *zap.Logger) error {
 	var jwtUserRep middleware.UserAddRepository
 
 	if cfg.DBDsn != "" {
-		dbConn, err := db.NewPgDB(cfg)
-		if err != nil {
-			return err
+		dbConn, dbErr := db.NewPgDB(cfg)
+		if dbErr != nil {
+			return dbErr
 		}
 
 		pingable = dbConn
@@ -107,6 +114,10 @@ func run(cfg *config.App, log *zap.Logger) error {
 	}
 
 	defer dh.Close()
+
+	fmt.Printf("Build version: %s\n", BuildVersion)
+	fmt.Printf("Build date: %s\n", BuildDate)
+	fmt.Printf("Build commit: %s\n", BuildCommit)
 
 	return http.ListenAndServe(
 		cfg.Listen,

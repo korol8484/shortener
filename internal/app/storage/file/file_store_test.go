@@ -15,16 +15,16 @@ import (
 	"github.com/korol8484/shortener/internal/app/storage/memory"
 )
 
-type storeCfg string
+type StoreCfg string
 
-func (s storeCfg) GetStoragePath() string {
+func (s StoreCfg) GetStoragePath() string {
 	return string(s)
 }
 
 func getStore(t *testing.T) (*Store, string) {
 	storePath := path.Join(os.TempDir(), uuid.NewString())
 
-	store, err := NewFileStore(storeCfg(storePath), memory.NewMemStore())
+	store, err := NewFileStore(StoreCfg(storePath), memory.NewMemStore())
 	require.NoError(t, err)
 
 	_, err = os.Stat(storePath)
@@ -169,4 +169,29 @@ func TestStore_ReadByURL(t *testing.T) {
 
 	_, err = store.ReadByURL(context.Background(), "http://www.ya1.ru")
 	require.ErrorIs(t, err, storage.ErrNotFound)
+}
+
+func TestStore_BatchDelete(t *testing.T) {
+	store, dPath := getStore(t)
+
+	defer func() {
+		_ = store.Close()
+		_ = os.Remove(dPath)
+	}()
+
+	user := &domain.User{ID: 1}
+
+	err := store.Add(context.Background(), &domain.URL{URL: "http://www.ya.ru", Alias: "7A2S4z"}, user)
+	require.NoError(t, err)
+
+	err = store.BatchDelete(context.Background(), []string{"7A2S4z"}, user.ID)
+	require.NoError(t, err)
+
+	userURL, err := store.ReadUserURL(context.Background(), user)
+	require.NoError(t, err)
+	require.Len(t, userURL, 1)
+
+	assert.Equal(t, "http://www.ya.ru", userURL[0].URL)
+	assert.Equal(t, "7A2S4z", userURL[0].Alias)
+	assert.Equal(t, true, userURL[0].Deleted)
 }

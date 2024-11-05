@@ -67,7 +67,8 @@ func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, storage.ErrIssetURL) {
 			res := &response{Result: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)}
 
-			b, err := json.Marshal(res)
+			var b []byte
+			b, err = json.Marshal(res)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return
