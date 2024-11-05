@@ -24,9 +24,12 @@ import (
 )
 
 var (
+	// BuildVersion - version
 	BuildVersion string = "N/A"
-	BuildDate    string = "N/A"
-	BuildCommit  string = "N/A"
+	// BuildDate - date
+	BuildDate string = "N/A"
+	// BuildCommit - commit
+	BuildCommit string = "N/A"
 )
 
 func main() {
