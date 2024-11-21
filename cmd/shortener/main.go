@@ -2,15 +2,10 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
-	"os"
-	"path"
-
-	"github.com/caarlos0/env/v11"
-	"go.uber.org/zap"
 
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/db"
@@ -34,18 +29,10 @@ var (
 )
 
 func main() {
-	cfg := &config.App{}
-
-	pwd, err := os.Getwd()
+	cfg, err := config.NewConfig()
 	if err != nil {
-		log.Fatalf("can't retrive pwd %s", err)
+		log.Fatalf("can't initalize config %s", err)
 	}
-
-	flag.StringVar(&cfg.Listen, "a", ":8080", "Http service list addr")
-	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
-	flag.StringVar(&cfg.FileStoragePath, "f", path.Join(pwd, "/data/db"), "set db file path")
-	flag.StringVar(&cfg.DBDsn, "d", "", "set postgresql connection string (DSN)")
-	flag.Parse()
 
 	zLog, err := logger.NewLogger(false)
 	if err != nil {
@@ -55,10 +42,6 @@ func main() {
 	defer func(zLog *zap.Logger) {
 		_ = zLog.Sync()
 	}(zLog)
-
-	if err = env.Parse(cfg); err != nil {
-		zLog.Warn("can't parse environment variables", zap.Error(err))
-	}
 
 	if err = run(cfg, zLog); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -122,6 +105,15 @@ func run(cfg *config.App, log *zap.Logger) error {
 	fmt.Printf("Build version: %s\n", BuildVersion)
 	fmt.Printf("Build date: %s\n", BuildDate)
 	fmt.Printf("Build commit: %s\n", BuildCommit)
+
+	if cfg.Https.Enable {
+		return http.ListenAndServeTLS(
+			cfg.Listen,
+			cfg.Https.Pem,
+			cfg.Https.Key,
+			handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh),
+		)
+	}
 
 	return http.ListenAndServe(
 		cfg.Listen,

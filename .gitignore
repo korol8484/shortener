@@ -22,3 +22,5 @@ vendor/
 .idea
 .vscode
 /data/db
+server.key
+server.pem
