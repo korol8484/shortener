@@ -73,7 +73,7 @@ func NewConfig() (*App, error) {
 	flag.StringVar(&cfg.Listen, "a", ":8080", "Http service list addr")
 	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
 	flag.StringVar(&cfg.FileStoragePath, "f", path.Join(pwd, "/data/db"), "set db file path")
-	flag.StringVar(&cfg.DBDsn, "d", "", "set postgresql connection string (DSN)")
+	flag.StringVar(&cfg.DBDsn, "d", "", "Set postgresql connection string (DSN)")
 	flag.BoolVar(&cfg.HTTPS.Enable, "s", false, "Run server in https")
 	flag.StringVar(&configPath, "c", "", "Path to config file")
 	flag.Parse()
