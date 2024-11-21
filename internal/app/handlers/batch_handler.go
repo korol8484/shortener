@@ -59,7 +59,9 @@ func (a *API) ShortenBatch(w http.ResponseWriter, r *http.Request) {
 	batchR := make(batchResponse, 0, len(req))
 
 	for _, v := range req {
-		ent, err := a.shortURL(v.URL)
+		var ent *domain.URL
+
+		ent, err = a.shortURL(v.URL)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
