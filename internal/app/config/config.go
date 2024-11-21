@@ -31,6 +31,7 @@ type App struct {
 	Https *Https
 }
 
+// Https configuration
 type Https struct {
 	Enable bool `env:"ENABLE_HTTPS"`
 	Key    string
@@ -53,6 +54,7 @@ func (a *App) GetDsn() string {
 	return a.DBDsn
 }
 
+// NewConfig Factory
 func NewConfig() (*App, error) {
 	pwd, err := os.Getwd()
 	if err != nil {
