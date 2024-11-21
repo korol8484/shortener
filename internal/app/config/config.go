@@ -2,10 +2,12 @@ package config
 
 import (
 	"bytes"
+	"cmp"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
 	"flag"
 	"fmt"
@@ -20,20 +22,20 @@ import (
 // App application configuration
 type App struct {
 	// Listen host:port on which web service will operate
-	Listen string `env:"SERVER_ADDRESS"`
+	Listen string `env:"SERVER_ADDRESS" json:"server_address,omitempty"`
 	// BaseShortURL HTTP domain append to short URL
-	BaseShortURL string `env:"BASE_URL"`
+	BaseShortURL string `env:"BASE_URL" json:"base_url,omitempty"`
 	// FileStoragePath Path to file database
-	FileStoragePath string `env:"FILE_STORAGE_PATH"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH" json:"file_storage_path,omitempty"`
 	// DBDsn Database connection string
-	DBDsn string `env:"DATABASE_DSN"`
+	DBDsn string `env:"DATABASE_DSN" json:"database_dsn,omitempty"`
 	// HTTPS config
 	HTTPS *HTTPS
 }
 
 // HTTPS configuration
 type HTTPS struct {
-	Enable bool `env:"ENABLE_HTTPS"`
+	Enable bool `env:"ENABLE_HTTPS" json:"enable_https"`
 	Key    string
 	Pem    string
 }
@@ -66,15 +68,38 @@ func NewConfig() (*App, error) {
 		Pem: path.Join(pwd, "/server.pem"),
 	}}
 
+	var configPath string
+
 	flag.StringVar(&cfg.Listen, "a", ":8080", "Http service list addr")
 	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
 	flag.StringVar(&cfg.FileStoragePath, "f", path.Join(pwd, "/data/db"), "set db file path")
 	flag.StringVar(&cfg.DBDsn, "d", "", "set postgresql connection string (DSN)")
 	flag.BoolVar(&cfg.HTTPS.Enable, "s", false, "Run server in https")
+	flag.StringVar(&configPath, "c", "", "Path to config file")
 	flag.Parse()
 
 	if err = env.Parse(cfg); err != nil {
 		return nil, fmt.Errorf("can't parse environment variables: %w", err)
+	}
+
+	if configPath != "" {
+		var rawCfg []byte
+		jCfg := &App{HTTPS: &HTTPS{}}
+
+		rawCfg, err = os.ReadFile(configPath)
+		if err != nil {
+			return nil, fmt.Errorf("can't load config file: %w", err)
+		}
+
+		if err = json.Unmarshal(rawCfg, jCfg); err != nil {
+			return nil, fmt.Errorf("can't unmarshal config: %w", err)
+		}
+
+		cfg.Listen = cmp.Or(cfg.Listen, jCfg.Listen)
+		cfg.BaseShortURL = cmp.Or(cfg.BaseShortURL, jCfg.BaseShortURL)
+		cfg.FileStoragePath = cmp.Or(cfg.FileStoragePath, jCfg.FileStoragePath)
+		cfg.DBDsn = cmp.Or(cfg.DBDsn, jCfg.DBDsn)
+		cfg.HTTPS.Enable = cmp.Or(cfg.HTTPS.Enable, jCfg.HTTPS.Enable)
 	}
 
 	if cfg.HTTPS.Enable {
