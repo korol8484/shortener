@@ -82,6 +82,10 @@ func NewConfig() (*App, error) {
 		return nil, fmt.Errorf("can't parse environment variables: %w", err)
 	}
 
+	if os.Getenv("CONFIG") != "" {
+		configPath = os.Getenv("CONFIG")
+	}
+
 	if configPath != "" {
 		var rawCfg []byte
 		jCfg := &App{HTTPS: &HTTPS{}}
