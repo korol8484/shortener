@@ -27,12 +27,12 @@ type App struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	// DBDsn Database connection string
 	DBDsn string `env:"DATABASE_DSN"`
-	// Https config
-	Https *Https
+	// HTTPS config
+	HTTPS *HTTPS
 }
 
-// Https configuration
-type Https struct {
+// HTTPS configuration
+type HTTPS struct {
 	Enable bool `env:"ENABLE_HTTPS"`
 	Key    string
 	Pem    string
@@ -61,7 +61,7 @@ func NewConfig() (*App, error) {
 		return nil, fmt.Errorf("can't retrive pwd %w", err)
 	}
 
-	cfg := &App{Https: &Https{
+	cfg := &App{HTTPS: &HTTPS{
 		Key: path.Join(pwd, "/server.key"),
 		Pem: path.Join(pwd, "/server.pem"),
 	}}
@@ -70,15 +70,15 @@ func NewConfig() (*App, error) {
 	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
 	flag.StringVar(&cfg.FileStoragePath, "f", path.Join(pwd, "/data/db"), "set db file path")
 	flag.StringVar(&cfg.DBDsn, "d", "", "set postgresql connection string (DSN)")
-	flag.BoolVar(&cfg.Https.Enable, "s", false, "Run server in https")
+	flag.BoolVar(&cfg.HTTPS.Enable, "s", false, "Run server in https")
 	flag.Parse()
 
 	if err = env.Parse(cfg); err != nil {
 		return nil, fmt.Errorf("can't parse environment variables: %w", err)
 	}
 
-	if cfg.Https.Enable {
-		err = createTLS(cfg.Https.Pem, cfg.Https.Key)
+	if cfg.HTTPS.Enable {
+		err = createTLS(cfg.HTTPS.Pem, cfg.HTTPS.Key)
 		if err != nil {
 			return nil, err
 		}

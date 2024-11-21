@@ -25,5 +25,5 @@ func TestNewConfig(t *testing.T) {
 
 	assert.Equal(t, "", cfg.GetDsn())
 	assert.NotEmpty(t, cfg.GetStoragePath())
-	assert.Equal(t, false, cfg.Https.Enable)
+	assert.Equal(t, false, cfg.HTTPS.Enable)
 }

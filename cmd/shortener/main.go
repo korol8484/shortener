@@ -106,11 +106,11 @@ func run(cfg *config.App, log *zap.Logger) error {
 	fmt.Printf("Build date: %s\n", BuildDate)
 	fmt.Printf("Build commit: %s\n", BuildCommit)
 
-	if cfg.Https.Enable {
+	if cfg.HTTPS.Enable {
 		return http.ListenAndServeTLS(
 			cfg.Listen,
-			cfg.Https.Pem,
-			cfg.Https.Key,
+			cfg.HTTPS.Pem,
+			cfg.HTTPS.Key,
 			handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh),
 		)
 	}
