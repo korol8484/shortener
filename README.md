@@ -1,6 +1,6 @@
 # go-musthave-shortener-tpl
 
-![Coverage](https://img.shields.io/badge/Coverage-54.5%25-yellow)
+![Coverage](https://img.shields.io/badge/Coverage-53.8%25-yellow)
 
 Шаблон репозитория для трека «Сервис сокращения URL».
 
