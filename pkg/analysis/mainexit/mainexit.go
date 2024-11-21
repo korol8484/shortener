@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// Analyzer - Check direct call to os.Exit in the main function
 var Analyzer = &analysis.Analyzer{
 	Name:     "mainexit",
 	Doc:      "Checking the use of a direct call to os.Exit in the main function of the main package",

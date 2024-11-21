@@ -130,7 +130,7 @@ func (f *Store) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) 
 
 // BatchDelete delete shorten collection URL
 func (f *Store) BatchDelete(ctx context.Context, aliases []string, userID int64) error {
-	return nil
+	return f.baseStore.BatchDelete(ctx, aliases, userID)
 }
 
 // Close - close file store

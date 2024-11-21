@@ -58,7 +58,7 @@ func (s *Storage) Add(ctx context.Context, ent *domain.URL, user *domain.User) e
 	if id < 1 {
 		isset = true
 
-		err = s.db.QueryRowContext(ctx, "SELECT t.id FROM public.shortener t WHERE url = $1", ent.URL).Scan(&id)
+		err = s.db.QueryRowContext(ctx, "SELECT t.id FROM shortener t WHERE url = $1", ent.URL).Scan(&id)
 		if err != nil {
 			return err
 		}
@@ -231,7 +231,7 @@ func (s *Storage) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	row := s.db.QueryRowContext(ctx, "SELECT t.url, t.alias, t.deleted FROM public.shortener t WHERE alias = $1", alias)
+	row := s.db.QueryRowContext(ctx, "SELECT t.url, t.alias, t.deleted FROM shortener t WHERE alias = $1", alias)
 	if row.Err() != nil {
 		return nil, row.Err()
 	}
@@ -250,7 +250,7 @@ func (s *Storage) ReadByURL(ctx context.Context, URL string) (*domain.URL, error
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	row := s.db.QueryRowContext(ctx, "SELECT t.url, t.alias FROM public.shortener t WHERE url = $1", URL)
+	row := s.db.QueryRowContext(ctx, "SELECT t.url, t.alias FROM shortener t WHERE url = $1", URL)
 	if row.Err() != nil {
 		return nil, row.Err()
 	}
@@ -281,7 +281,7 @@ func (s *Storage) migrate(ctx context.Context) error {
 	}(tx)
 
 	_, err = tx.ExecContext(ctx, `
-	create table if not exists public.shortener
+	create table if not exists shortener
 	(
 		id    bigserial
 			constraint shortener_pk
@@ -293,12 +293,12 @@ func (s *Storage) migrate(ctx context.Context) error {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, `create index if not exists shortener_alias_index on public.shortener (alias);`)
+	_, err = tx.ExecContext(ctx, `create index if not exists shortener_alias_index on shortener (alias);`)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS shortener_uidx_url ON shortener USING btree (url);`)
+	_, err = tx.ExecContext(ctx, `create unique index if not exists shortener_uidx_url ON shortener (url);`)
 	if err != nil {
 		return err
 	}
@@ -308,22 +308,22 @@ func (s *Storage) migrate(ctx context.Context) error {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, `create table if not exists public.user_url
+	_, err = tx.ExecContext(ctx, `create table if not exists user_url
 	(
 		user_id bigserial
 			constraint user_url_user_id_fk
-				references public."user"
+				references "user"
 				on delete cascade,
 		url_id  bigserial
 			constraint user_url_shortener_id_fk
-				references public.shortener
+				references shortener
 				on delete cascade
 	);`)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, `create unique index if not exists user_url_url_id_user_id_uindex on public.user_url (url_id, user_id);`)
+	_, err = tx.ExecContext(ctx, `create unique index if not exists user_url_url_id_user_id_uindex on user_url (url_id, user_id);`)
 	if err != nil {
 		return err
 	}
