@@ -195,3 +195,46 @@ func TestStore_BatchDelete(t *testing.T) {
 	assert.Equal(t, "7A2S4z", userURL[0].Alias)
 	assert.Equal(t, true, userURL[0].Deleted)
 }
+
+func TestStore_save(t *testing.T) {
+	store, dPath := getStore(t)
+
+	err := store.save(&domain.URL{URL: "1", Alias: "1"}, &domain.User{ID: 1})
+	require.NoError(t, err)
+
+	err = store.Close()
+	require.NoError(t, err)
+	err = os.Remove(dPath)
+	require.NoError(t, err)
+
+	store, dPath = getStore(t)
+	_ = os.Remove(dPath)
+	_ = store.Close()
+
+	err = store.save(&domain.URL{URL: "1", Alias: "1"}, &domain.User{ID: 1})
+	require.Error(t, err)
+}
+
+func TestStore_AddBatch(t *testing.T) {
+}
+
+func Test_load(t *testing.T) {
+	p := path.Join(os.TempDir(), uuid.NewString())
+	f, err := os.Create(p)
+	require.NoError(t, err)
+
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(p)
+
+	_, err = f.Write([]byte("{\"uuid\":\"52edec03-edee-4600-999f-f5af452c29f0\",\"short_url\":\"7qfJga\",\"original_url\":\"http://www.ya1111111sdfdsfcccccfsdc11.ru\",\"user_id\":8}"))
+	require.NoError(t, err)
+
+	_ = f.Close()
+
+	store, err := NewFileStore(StoreCfg(p), memory.NewMemStore())
+	require.NoError(t, err)
+
+	err = store.Close()
+	require.NoError(t, err)
+}
