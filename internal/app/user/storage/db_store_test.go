@@ -30,6 +30,9 @@ func TestMain(m *testing.M) {
 func run(m *testing.M) (int, error) {
 	var err error
 	db, mock, err = sqlmock.New()
+	if err != nil {
+		return -1, err
+	}
 
 	mock.ExpectBegin()
 	mock.ExpectExec("create table if not exists \"user\"").WithoutArgs().WillReturnResult(sqlmock.NewResult(1, 1))

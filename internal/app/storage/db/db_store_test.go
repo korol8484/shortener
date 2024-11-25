@@ -36,6 +36,9 @@ func TestMain(m *testing.M) {
 func run(m *testing.M) (int, error) {
 	var err error
 	db, mock, err = sqlmock.New()
+	if err != nil {
+		return -1, err
+	}
 
 	mock.ExpectBegin()
 	mock.ExpectExec("create table if not exists shortener .*").WithoutArgs().WillReturnResult(sqlmock.NewResult(1, 1))
@@ -163,7 +166,7 @@ func TestStorage_AddBatch(t *testing.T) {
 }
 
 func TestStorage_Close(t *testing.T) {
-	cDb, CMock, err := sqlmock.New()
+	cDB, CMock, err := sqlmock.New()
 	require.NoError(t, err)
 
 	CMock.ExpectBegin()
@@ -175,7 +178,7 @@ func TestStorage_Close(t *testing.T) {
 	CMock.ExpectExec("create unique index.*").WithoutArgs().WillReturnResult(sqlmock.NewResult(1, 1))
 	CMock.ExpectCommit()
 
-	cStore, err := NewStorage(cDb)
+	cStore, err := NewStorage(cDB)
 	require.NoError(t, err)
 
 	CMock.ExpectClose()
