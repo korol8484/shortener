@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"go.uber.org/zap"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/db"
@@ -109,6 +111,11 @@ func run(cfg *config.App, log *zap.Logger) error {
 	fmt.Printf("Build date: %s\n", BuildDate)
 	fmt.Printf("Build commit: %s\n", BuildCommit)
 
+	server := &http.Server{
+		Addr:    cfg.Listen,
+		Handler: handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh),
+	}
+
 	oss, stop, errCh := make(chan os.Signal, 1), make(chan struct{}, 1), make(chan error, 1)
 	signal.Notify(oss, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
@@ -120,21 +127,16 @@ func run(cfg *config.App, log *zap.Logger) error {
 
 	if cfg.HTTPS.Enable {
 		go func() {
-			if err = http.ListenAndServeTLS(
-				cfg.Listen,
+			if err = server.ListenAndServeTLS(
 				cfg.HTTPS.Pem,
 				cfg.HTTPS.Key,
-				handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh),
 			); err != nil {
 				errCh <- err
 			}
 		}()
 	} else {
 		go func() {
-			if err = http.ListenAndServe(
-				cfg.Listen,
-				handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh),
-			); err != nil {
+			if err = server.ListenAndServe(); err != nil {
 				errCh <- err
 			}
 		}()
@@ -145,6 +147,15 @@ func run(cfg *config.App, log *zap.Logger) error {
 		case e := <-errCh:
 			return e
 		case <-stop:
+			withTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			if err = server.Shutdown(withTimeout); err != nil {
+				cancel()
+
+				return err
+			}
+
+			cancel()
+
 			return nil
 		}
 	}
