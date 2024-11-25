@@ -20,7 +20,7 @@ func TestCreateRouter(t *testing.T) {
 	defer api.Close()
 
 	r := CreateRouter(store, cfg, zap.L(), pi, uRep, api)
-	if r != nil {
+	if r == nil {
 		t.Fatal("not implement http.Handler")
 	}
 }
