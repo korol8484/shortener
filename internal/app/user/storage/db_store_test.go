@@ -4,13 +4,20 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db *sql.DB
+var (
+	db    *sql.DB
+	mock  sqlmock.Sqlmock
+	store *DBStorage
+)
 
 func TestMain(m *testing.M) {
 	code, err := run(m)
@@ -22,27 +29,35 @@ func TestMain(m *testing.M) {
 
 func run(m *testing.M) (int, error) {
 	var err error
-
-	db, err = sql.Open("sqlite3", "file:./test.db?cache=shared&mode=memory")
+	db, mock, err = sqlmock.New()
 	if err != nil {
-		return -1, fmt.Errorf("could not connect to database: %w", err)
+		return -1, err
 	}
 
-	defer func() {
-		_ = db.Close()
-	}()
+	mock.ExpectBegin()
+	mock.ExpectExec("create table if not exists \"user\"").WithoutArgs().WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	store, err = NewStorage(db)
+	if err != nil {
+		return -1, err
+	}
 
 	return m.Run(), nil
 }
 
-func TestNewStorage(t *testing.T) {
-	store, err := NewStorage(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestDBStorage_NewUser(t *testing.T) {
+	mock.ExpectQuery("INSERT INTO \"user\"").
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+	user, err := store.NewUser(context.Background())
 
-	_, _ = store.NewUser(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, user.ID, int64(1))
 
-	_, err = NewStorage(db)
-	t.Log(err)
+	mock.ExpectQuery("INSERT INTO \"user\"").
+		WillReturnError(sql.ErrNoRows)
+
+	_, err = store.NewUser(context.Background())
+
+	require.Error(t, err)
 }

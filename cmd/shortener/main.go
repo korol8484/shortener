@@ -1,16 +1,16 @@
 package main
 
 import (
+	"context"
 	"errors"
-	"flag"
 	"fmt"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"os"
-	"path"
-
-	"github.com/caarlos0/env/v11"
-	"go.uber.org/zap"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/db"
@@ -34,18 +34,10 @@ var (
 )
 
 func main() {
-	cfg := &config.App{}
-
-	pwd, err := os.Getwd()
+	cfg, err := config.NewConfig()
 	if err != nil {
-		log.Fatalf("can't retrive pwd %s", err)
+		log.Fatalf("can't initalize config %s", err)
 	}
-
-	flag.StringVar(&cfg.Listen, "a", ":8080", "Http service list addr")
-	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
-	flag.StringVar(&cfg.FileStoragePath, "f", path.Join(pwd, "/data/db"), "set db file path")
-	flag.StringVar(&cfg.DBDsn, "d", "", "set postgresql connection string (DSN)")
-	flag.Parse()
 
 	zLog, err := logger.NewLogger(false)
 	if err != nil {
@@ -55,10 +47,6 @@ func main() {
 	defer func(zLog *zap.Logger) {
 		_ = zLog.Sync()
 	}(zLog)
-
-	if err = env.Parse(cfg); err != nil {
-		zLog.Warn("can't parse environment variables", zap.Error(err))
-	}
 
 	if err = run(cfg, zLog); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -123,8 +111,52 @@ func run(cfg *config.App, log *zap.Logger) error {
 	fmt.Printf("Build date: %s\n", BuildDate)
 	fmt.Printf("Build commit: %s\n", BuildCommit)
 
-	return http.ListenAndServe(
-		cfg.Listen,
-		handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh),
-	)
+	server := &http.Server{
+		Addr:    cfg.Listen,
+		Handler: handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh),
+	}
+
+	oss, stop, errCh := make(chan os.Signal, 1), make(chan struct{}, 1), make(chan error, 1)
+	signal.Notify(oss, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+
+	go func() {
+		<-oss
+
+		stop <- struct{}{}
+	}()
+
+	if cfg.HTTPS.Enable {
+		go func() {
+			if err = server.ListenAndServeTLS(
+				cfg.HTTPS.Pem,
+				cfg.HTTPS.Key,
+			); err != nil {
+				errCh <- err
+			}
+		}()
+	} else {
+		go func() {
+			if err = server.ListenAndServe(); err != nil {
+				errCh <- err
+			}
+		}()
+	}
+
+	for {
+		select {
+		case e := <-errCh:
+			return e
+		case <-stop:
+			withTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			if err = server.Shutdown(withTimeout); err != nil {
+				cancel()
+
+				return err
+			}
+
+			cancel()
+
+			return nil
+		}
+	}
 }
