@@ -58,6 +58,7 @@ func (a *App) GetDsn() string {
 	return a.DBDsn
 }
 
+// GetTrustedSubnet CIDR for check access stats method 127.0.0.1/24
 func (a *App) GetTrustedSubnet() string {
 	return a.TrustedSubnet
 }
