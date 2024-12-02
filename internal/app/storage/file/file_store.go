@@ -133,6 +133,11 @@ func (f *Store) BatchDelete(ctx context.Context, aliases []string, userID int64)
 	return f.baseStore.BatchDelete(ctx, aliases, userID)
 }
 
+// LoadStats load url items, user count
+func (f *Store) LoadStats(ctx context.Context) (*domain.StatsModel, error) {
+	return f.baseStore.LoadStats(ctx)
+}
+
 // Close - close file store
 func (f *Store) Close() error {
 	return f.file.Close()
