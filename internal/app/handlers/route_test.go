@@ -19,7 +19,10 @@ func TestCreateRouter(t *testing.T) {
 	require.NoError(t, err)
 	defer api.Close()
 
-	r := CreateRouter(store, cfg, zap.L(), pi, uRep, api)
+	stat, err := NewStats(cfg, zap.L(), store)
+	require.NoError(t, err)
+
+	r := CreateRouter(store, cfg, zap.L(), pi, uRep, api, stat)
 	if r == nil {
 		t.Fatal("not implement http.Handler")
 	}

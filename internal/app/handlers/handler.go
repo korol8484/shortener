@@ -35,6 +35,7 @@ type Store interface {
 	AddBatch(ctx context.Context, batch domain.BatchURL, user *domain.User) error
 	ReadUserURL(ctx context.Context, user *domain.User) (domain.BatchURL, error)
 	BatchDelete(ctx context.Context, aliases []string, userID int64) error
+	LoadStats(ctx context.Context) (*domain.StatsModel, error)
 	Close() error
 }
 

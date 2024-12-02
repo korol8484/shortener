@@ -137,6 +137,22 @@ func (m *MemStore) BatchDelete(ctx context.Context, aliases []string, userID int
 	return nil
 }
 
+// LoadStats load url items, user count
+func (m *MemStore) LoadStats(ctx context.Context) (*domain.StatsModel, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		return &domain.StatsModel{
+			Urls:  int64(len(m.items)),
+			Users: int64(len(m.userItems)),
+		}, nil
+	}
+}
+
 // Close - clear store resources
 func (m *MemStore) Close() error {
 	return nil

@@ -104,8 +104,12 @@ func run(cfg *config.App, log *zap.Logger) error {
 	if err != nil {
 		return err
 	}
-
 	defer dh.Close()
+
+	stats, err := handlers.NewStats(cfg, log, store)
+	if err != nil {
+		return err
+	}
 
 	fmt.Printf("Build version: %s\n", BuildVersion)
 	fmt.Printf("Build date: %s\n", BuildDate)
@@ -113,7 +117,7 @@ func run(cfg *config.App, log *zap.Logger) error {
 
 	server := &http.Server{
 		Addr:    cfg.Listen,
-		Handler: handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh),
+		Handler: handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh, stats),
 	}
 
 	oss, stop, errCh := make(chan os.Signal, 1), make(chan struct{}, 1), make(chan error, 1)
