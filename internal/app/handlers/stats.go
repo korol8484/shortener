@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"go.uber.org/zap"
 	"net"
@@ -13,26 +12,15 @@ type StatsCfg interface {
 	GetTrustedSubnet() string
 }
 
-// StatsModel - data model
-type StatsModel struct {
-	Urls  int64 `json:"urls"`
-	Users int64 `json:"users"`
-}
-
-// StatsStorage - storage interface for load stats
-type StatsStorage interface {
-	LoadStats(ctx context.Context) (*StatsModel, error)
-}
-
 // Stats - service handler
 type Stats struct {
 	logger  *zap.Logger
 	ipNet   *net.IPNet
-	storage StatsStorage
+	storage Store
 }
 
 // NewStats - factory
-func NewStats(cfg StatsCfg, logger *zap.Logger, storage StatsStorage) (*Stats, error) {
+func NewStats(cfg StatsCfg, logger *zap.Logger, storage Store) (*Stats, error) {
 	var ipNet *net.IPNet
 	var err error
 
@@ -57,6 +45,7 @@ func (s *Stats) handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ipStr := r.Header.Get("X-Real-IP")
+
 	if ipStr == "" {
 		w.WriteHeader(http.StatusForbidden)
 		return

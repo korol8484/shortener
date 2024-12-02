@@ -58,6 +58,10 @@ func (a *App) GetDsn() string {
 	return a.DBDsn
 }
 
+func (a *App) GetTrustedSubnet() string {
+	return a.TrustedSubnet
+}
+
 // NewConfig Factory
 func NewConfig() (*App, error) {
 	pwd, err := os.Getwd()
