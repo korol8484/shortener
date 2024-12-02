@@ -31,6 +31,8 @@ type App struct {
 	DBDsn string `env:"DATABASE_DSN" json:"database_dsn,omitempty"`
 	// HTTPS config
 	HTTPS *HTTPS
+	// TrustedSubnet - CIDR for check access stats method
+	TrustedSubnet string `env:"TRUSTED_SUBNET" json:"trusted_subnet,omitempty"`
 }
 
 // HTTPS configuration
@@ -56,6 +58,11 @@ func (a *App) GetDsn() string {
 	return a.DBDsn
 }
 
+// GetTrustedSubnet CIDR for check access stats method 127.0.0.1/24
+func (a *App) GetTrustedSubnet() string {
+	return a.TrustedSubnet
+}
+
 // NewConfig Factory
 func NewConfig() (*App, error) {
 	pwd, err := os.Getwd()
@@ -76,6 +83,7 @@ func NewConfig() (*App, error) {
 	flag.StringVar(&cfg.DBDsn, "d", "", "Set postgresql connection string (DSN)")
 	flag.BoolVar(&cfg.HTTPS.Enable, "s", false, "Run server in https")
 	flag.StringVar(&configPath, "c", "", "Path to config file")
+	flag.StringVar(&cfg.TrustedSubnet, "t", "", "CIDR for check access to /api/internal/stats")
 	flag.Parse()
 
 	if err = env.Parse(cfg); err != nil {

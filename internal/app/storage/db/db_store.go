@@ -264,6 +264,21 @@ func (s *Storage) ReadByURL(ctx context.Context, URL string) (*domain.URL, error
 	return ent, nil
 }
 
+// LoadStats load url items, user count
+func (s *Storage) LoadStats(ctx context.Context) (*domain.StatsModel, error) {
+	ent := &domain.StatsModel{}
+
+	err := s.db.QueryRowContext(
+		ctx,
+		"SELECT count(DISTINCT url_id), count(DISTINCT user_id) FROM user_url;",
+	).Scan(&ent.Users, &ent.Urls)
+	if err != nil {
+		return nil, err
+	}
+
+	return ent, nil
+}
+
 // Close - close db
 func (s *Storage) Close() error {
 	return s.db.Close()
