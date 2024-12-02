@@ -133,6 +133,7 @@ func (f *Store) BatchDelete(ctx context.Context, aliases []string, userID int64)
 	return f.baseStore.BatchDelete(ctx, aliases, userID)
 }
 
+// LoadStats load url items, user count
 func (f *Store) LoadStats(ctx context.Context) (*domain.StatsModel, error) {
 	return f.baseStore.LoadStats(ctx)
 }
