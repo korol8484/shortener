@@ -27,6 +27,6 @@ jobs:
         with:
           profile: coverage.out
           local-prefix: github.com/korol8484/shortener
-          git-token: ${{ github.ref_name == 'main' && secrets.GITHUB_TOKEN || '' }}
+          git-token: ${{ secrets.GITHUB_TOKEN || '' }}
           git-branch: badges
           config: ./.testcoverage.yml
