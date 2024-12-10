@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package service;
+
+option go_package = "github.com/korol8484/shortener/internal/app/grpc/service";
+
+import "proto/service/contract/request.proto";
+import "proto/service/contract/response.proto";
+import "google/protobuf/empty.proto";
+
+service Internal {
+    rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty) {};
+    rpc HandleShort (contract.RequestShort) returns (contract.ResponseShort) {};
+    rpc HandleGet(contract.RequestFindByAlias) returns (contract.ResponseShort) {};
+    rpc HandleBatch (contract.RequestBatch) returns (contract.ResponseBatch) {};
+    rpc UserURL (google.protobuf.Empty) returns (contract.ResponseUserUrl) {};
+    rpc BatchDelete (contract.RequestBatchDelete) returns (google.protobuf.Empty) {};
+    rpc Stats (google.protobuf.Empty) returns (contract.ResponseStats) {};
+}

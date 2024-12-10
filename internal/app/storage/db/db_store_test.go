@@ -110,22 +110,6 @@ func TestStorage_Read(t *testing.T) {
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
-func TestStorage_ReadByURL(t *testing.T) {
-	mock.ExpectQuery("SELECT t.url, t.alias FROM shortener t").
-		WithArgs("http://ya.ru").
-		WillReturnRows(
-			sqlmock.NewRows([]string{"url", "alias"}).
-				AddRow("http://ya.ru", "alias"),
-		)
-
-	url, err := store.ReadByURL(context.Background(), "http://ya.ru")
-	require.NoError(t, err)
-
-	assert.Equal(t, "http://ya.ru", url.URL)
-	assert.Equal(t, "alias", url.Alias)
-	assert.False(t, url.Deleted)
-}
-
 func TestStorage_ReadUserURL(t *testing.T) {
 	mock.ExpectQuery("SELECT s.url, s.alias FROM shortener s").
 		WithArgs(1).

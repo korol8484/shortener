@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -61,7 +60,7 @@ func (a *API) ShortenBatch(w http.ResponseWriter, r *http.Request) {
 	for _, v := range req {
 		var ent *domain.URL
 
-		ent, err = a.shortURL(v.URL)
+		ent, err = a.usecase.GenerateURL(v.URL)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -70,7 +69,7 @@ func (a *API) ShortenBatch(w http.ResponseWriter, r *http.Request) {
 		batchD = append(batchD, ent)
 		batchR = append(batchR, batchResponseItem{
 			ID:  v.ID,
-			URL: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias),
+			URL: a.usecase.FormatAlias(ent),
 		})
 	}
 
@@ -80,7 +79,7 @@ func (a *API) ShortenBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.store.AddBatch(r.Context(), batchD, &domain.User{ID: userID}); err != nil {
+	if err = a.usecase.AddBatch(r.Context(), batchD, userID); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

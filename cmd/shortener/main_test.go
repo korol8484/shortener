@@ -19,10 +19,10 @@ func Test_run(t *testing.T) {
 		_ = syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 	}()
 
-	err := run(&config.App{HTTPS: &config.HTTPS{}, Listen: ":8099"}, zap.L())
+	err := runHTTP(&config.App{HTTPS: &config.HTTPS{}, Listen: ":8099"}, zap.L())
 	require.NoError(t, err)
 
-	err = run(&config.App{HTTPS: &config.HTTPS{}, Listen: "8099"}, zap.L())
+	err = runHTTP(&config.App{HTTPS: &config.HTTPS{}, Listen: "8099"}, zap.L())
 	require.Error(t, err)
 
 	go func() {
@@ -37,7 +37,7 @@ func Test_run(t *testing.T) {
 	cfg, err := config.NewConfig()
 	require.NoError(t, err)
 
-	err = run(cfg, zap.L())
+	err = runHTTP(cfg, zap.L())
 	require.NoError(t, err)
 
 	_ = os.Remove(cfg.HTTPS.Key)

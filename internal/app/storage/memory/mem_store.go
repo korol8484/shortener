@@ -104,23 +104,6 @@ func (m *MemStore) Read(ctx context.Context, alias string) (*domain.URL, error) 
 	return &domain.URL{Alias: alias, URL: m.items[alias].URL, Deleted: m.items[alias].deleted}, nil
 }
 
-// ReadByURL read shorten URL by URL
-func (m *MemStore) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	for k, v := range m.items {
-		if v.URL == URL {
-			return &domain.URL{
-				URL:   v.URL,
-				Alias: k,
-			}, nil
-		}
-	}
-
-	return nil, storage.ErrNotFound
-}
-
 // BatchDelete delete shorten collection URL
 func (m *MemStore) BatchDelete(ctx context.Context, aliases []string, userID int64) error {
 	m.mu.Lock()
@@ -135,6 +118,22 @@ func (m *MemStore) BatchDelete(ctx context.Context, aliases []string, userID int
 	}
 
 	return nil
+}
+
+// LoadStats load url items, user count
+func (m *MemStore) LoadStats(ctx context.Context) (*domain.StatsModel, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		return &domain.StatsModel{
+			Urls:  int64(len(m.items)),
+			Users: int64(len(m.userItems)),
+		}, nil
+	}
 }
 
 // Close - clear store resources
