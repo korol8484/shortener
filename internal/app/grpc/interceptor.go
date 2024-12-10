@@ -13,6 +13,7 @@ import (
 	"strings"
 )
 
+// JwtInterceptor - add or read auth info from request
 func JwtInterceptor(jwt *usecase.Jwt) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		md, ok := metadata.FromIncomingContext(ctx)
@@ -47,6 +48,7 @@ func JwtInterceptor(jwt *usecase.Jwt) grpc.UnaryServerInterceptor {
 	}
 }
 
+// IPInterceptor - check access by ip for methods
 func IPInterceptor(CIDR string, methods []string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		if !slices.Contains(methods, info.FullMethod) {
