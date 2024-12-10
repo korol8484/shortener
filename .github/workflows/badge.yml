@@ -30,3 +30,4 @@ jobs:
           git-token: ${{ secrets.GITHUB_TOKEN || '' }}
           git-branch: badges
           config: ./.testcoverage.yml
+          git-file-name: .badges/coverage.svg
