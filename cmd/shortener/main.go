@@ -70,11 +70,6 @@ func main() {
 }
 
 func runGRPC(cfg *config.App, log *zap.Logger) error {
-	//l := strings.SplitN(cfg.Listen, ":", 2)
-	//if len(l) != 2 {
-	//	return fmt.Errorf("can't parse listen string: %s", cfg.Listen)
-	//}
-
 	uCase, jwtUserRep, err := baseInit(cfg, log)
 	if err != nil {
 		return err
