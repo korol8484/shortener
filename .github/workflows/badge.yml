@@ -21,9 +21,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Run Test
-        run: |
-          go test -v ./... -covermode=count -coverprofile=coverage.out
-          go tool cover -func=coverage.out -o=coverage.out
+        run: go test ./... -coverprofile=./coverage.out -covermode=atomic -coverpkg=./...
       - name: check test coverage
         uses: vladopajic/go-test-coverage@v2
         with:
