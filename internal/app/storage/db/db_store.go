@@ -245,25 +245,6 @@ func (s *Storage) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	return ent, nil
 }
 
-// ReadByURL read shorten URL by URL
-func (s *Storage) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	row := s.db.QueryRowContext(ctx, "SELECT t.url, t.alias FROM shortener t WHERE url = $1", URL)
-	if row.Err() != nil {
-		return nil, row.Err()
-	}
-
-	ent := &domain.URL{}
-	err := row.Scan(&ent.URL, &ent.Alias)
-	if err != nil {
-		return nil, err
-	}
-
-	return ent, nil
-}
-
 // LoadStats load url items, user count
 func (s *Storage) LoadStats(ctx context.Context) (*domain.StatsModel, error) {
 	ent := &domain.StatsModel{}

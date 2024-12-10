@@ -2,6 +2,10 @@ package handlers
 
 import (
 	"errors"
+	"github.com/korol8484/shortener/internal/app/config"
+	"github.com/korol8484/shortener/internal/app/storage/memory"
+	"github.com/korol8484/shortener/internal/app/usecase"
+	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -29,7 +33,20 @@ func TestAPI_Ping(t *testing.T) {
 	defer ctrl.Finish()
 
 	m := mocks.NewMockPingable(ctrl)
-	router.Get("/ping", Ping(m))
+
+	store := memory.NewMemStore()
+	defer func(store usecase.Store) {
+		_ = store.Close()
+	}(store)
+
+	uCase := usecase.NewUsecase(
+		&config.App{BaseShortURL: srv.URL},
+		store,
+		m,
+		zap.L(),
+	)
+	api := NewAPI(uCase)
+	router.Get("/ping", api.Ping)
 
 	gomock.InOrder(
 		m.EXPECT().Ping().Return(errors.New("error")),
@@ -73,13 +90,5 @@ func TestAPI_Ping(t *testing.T) {
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 		})
-	}
-}
-
-func TestNewPingDummy(t *testing.T) {
-	dp := NewPingDummy()
-	err := dp.Ping()
-	if err != nil {
-		t.Fatal(err)
 	}
 }

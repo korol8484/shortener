@@ -33,6 +33,8 @@ type App struct {
 	HTTPS *HTTPS
 	// TrustedSubnet - CIDR for check access stats method
 	TrustedSubnet string `env:"TRUSTED_SUBNET" json:"trusted_subnet,omitempty"`
+	// Grpc - run service as grpc
+	Grpc bool `env:"GRPC" json:"grpc,omitempty"`
 }
 
 // HTTPS configuration
@@ -81,9 +83,10 @@ func NewConfig() (*App, error) {
 	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base short url")
 	flag.StringVar(&cfg.FileStoragePath, "f", path.Join(pwd, "/data/db"), "set db file path")
 	flag.StringVar(&cfg.DBDsn, "d", "", "Set postgresql connection string (DSN)")
-	flag.BoolVar(&cfg.HTTPS.Enable, "s", false, "Run server in https")
+	flag.BoolVar(&cfg.HTTPS.Enable, "s", false, "Run server as https")
 	flag.StringVar(&configPath, "c", "", "Path to config file")
 	flag.StringVar(&cfg.TrustedSubnet, "t", "", "CIDR for check access to /api/internal/stats")
+	flag.BoolVar(&cfg.Grpc, "g", false, "Run server as grpc")
 	flag.Parse()
 
 	if err = env.Parse(cfg); err != nil {

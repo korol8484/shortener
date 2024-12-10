@@ -3,11 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/storage"
 	"github.com/korol8484/shortener/internal/app/user/util"
 )
@@ -39,20 +37,8 @@ func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// по сути лишнее, закрывается в net/http
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(r.Body)
-
 	req := &request{}
-
 	if err = json.Unmarshal(body, req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	ent, err := a.shortURL(req.URL)
-	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -63,9 +49,10 @@ func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.store.Add(r.Context(), ent, &domain.User{ID: userID}); err != nil {
+	ent, err := a.usecase.CreateURL(r.Context(), req.URL, userID)
+	if err != nil {
 		if errors.Is(err, storage.ErrIssetURL) {
-			res := &response{Result: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)}
+			res := &response{Result: a.usecase.FormatAlias(ent)}
 
 			var b []byte
 			b, err = json.Marshal(res)
@@ -85,8 +72,7 @@ func (a *API) ShortenJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := &response{Result: fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), ent.Alias)}
-
+	res := &response{Result: a.usecase.FormatAlias(ent)}
 	b, err := json.Marshal(res)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

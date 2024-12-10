@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package service.contract;
+
+option go_package = "github.com/korol8484/shortener/internal/app/grpc/service/contract";
+
+import "proto/service/contract/entity.proto";
+
+message RequestShort {
+    string data = 1;
+}
+
+message RequestFindByAlias {
+    string alias = 1;
+}
+
+message RequestBatch {
+    repeated Batch batch = 1;
+}
+
+message RequestBatchDelete {
+    repeated string alias = 1;
+}

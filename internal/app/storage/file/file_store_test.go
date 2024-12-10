@@ -150,27 +150,6 @@ func TestStore_ReadUserURL(t *testing.T) {
 	require.Len(t, userURL, 0)
 }
 
-func TestStore_ReadByURL(t *testing.T) {
-	store, dPath := getStore(t)
-
-	defer func() {
-		_ = store.Close()
-		_ = os.Remove(dPath)
-	}()
-
-	err := store.Add(context.Background(), &domain.URL{URL: "http://www.ya.ru", Alias: "7A2S4z"}, &domain.User{ID: 1})
-	require.NoError(t, err)
-
-	URL, err := store.ReadByURL(context.Background(), "http://www.ya.ru")
-	require.NoError(t, err)
-
-	assert.Equal(t, "http://www.ya.ru", URL.URL)
-	assert.Equal(t, "7A2S4z", URL.Alias)
-
-	_, err = store.ReadByURL(context.Background(), "http://www.ya1.ru")
-	require.ErrorIs(t, err, storage.ErrNotFound)
-}
-
 func TestStore_BatchDelete(t *testing.T) {
 	store, dPath := getStore(t)
 

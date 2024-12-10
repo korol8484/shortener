@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/korol8484/shortener/internal/app/usecase"
 	"go.uber.org/zap"
 	"net"
 	"net/http"
@@ -16,11 +17,11 @@ type StatsCfg interface {
 type Stats struct {
 	logger  *zap.Logger
 	ipNet   *net.IPNet
-	storage Store
+	usecase *usecase.Usecase
 }
 
 // NewStats - factory
-func NewStats(cfg StatsCfg, logger *zap.Logger, storage Store) (*Stats, error) {
+func NewStats(cfg StatsCfg, logger *zap.Logger, usecase *usecase.Usecase) (*Stats, error) {
 	var ipNet *net.IPNet
 	var err error
 
@@ -34,7 +35,7 @@ func NewStats(cfg StatsCfg, logger *zap.Logger, storage Store) (*Stats, error) {
 	return &Stats{
 		logger:  logger,
 		ipNet:   ipNet,
-		storage: storage,
+		usecase: usecase,
 	}, nil
 }
 
@@ -62,7 +63,7 @@ func (s *Stats) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stat, err := s.storage.LoadStats(r.Context())
+	stat, err := s.usecase.GetStats(r.Context())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

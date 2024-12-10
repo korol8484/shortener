@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/korol8484/shortener/internal/app/handlers/middleware"
+	"github.com/korol8484/shortener/internal/app/usecase"
 )
 
 // CreateRouter create HTTP router, register endpoints using chi
@@ -21,15 +22,12 @@ import (
 // @host			http://localhost:8080
 // @BasePath		/
 func CreateRouter(
-	store Store,
-	cfg Config,
+	uc *usecase.Usecase,
 	logger *zap.Logger,
-	p Pingable,
-	userRep middleware.UserAddRepository,
-	deleteHandler *Delete,
+	userRep usecase.UserAddRepository,
 	stats *Stats,
 ) http.Handler {
-	api := NewAPI(store, cfg)
+	api := NewAPI(uc)
 	r := chi.NewRouter()
 
 	r.Group(func(r chi.Router) {
@@ -39,18 +37,18 @@ func CreateRouter(
 			middleware.NewCompressor().Handler,
 		)
 
-		jwtH := middleware.NewJwt(userRep, logger, "12345dsdsdtoken")
+		jwtH := middleware.NewJwt(usecase.NewJwt(userRep, logger, "1234567891"), logger)
 
 		r.With(jwtH.HandlerSet()).Post("/", api.HandleShort)
 		r.Get("/{id}", api.HandleRedirect)
 		r.With(jwtH.HandlerSet()).Post("/api/shorten", api.ShortenJSON)
 		r.With(jwtH.HandlerSet()).Post("/api/shorten/batch", api.ShortenBatch)
 		r.With(jwtH.HandlerRead()).Get("/api/user/urls", api.UserURL)
-		r.With(jwtH.HandlerRead()).Delete("/api/user/urls", deleteHandler.BatchDelete)
+		r.With(jwtH.HandlerRead()).Delete("/api/user/urls", api.BatchDelete)
 		r.Get("/api/internal/stats", stats.handle)
 	})
 
-	r.Get("/ping", Ping(p))
+	r.Get("/ping", api.Ping)
 
 	return r
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/storage/memory"
+	"github.com/korol8484/shortener/internal/app/usecase"
 	"github.com/korol8484/shortener/internal/app/user/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -12,17 +13,21 @@ import (
 func TestCreateRouter(t *testing.T) {
 	store := memory.NewMemStore()
 	cfg := &config.App{}
-	pi := &PingDummy{}
+	pi := &usecase.PingDummy{}
 	uRep := storage.NewMemoryStore()
 
-	api, err := NewDelete(store, zap.L())
-	require.NoError(t, err)
-	defer api.Close()
+	uCase := usecase.NewUsecase(
+		cfg,
+		store,
+		pi,
+		zap.L(),
+	)
+	defer uCase.Close()
 
-	stat, err := NewStats(cfg, zap.L(), store)
+	stat, err := NewStats(cfg, zap.L(), uCase)
 	require.NoError(t, err)
 
-	r := CreateRouter(store, cfg, zap.L(), pi, uRep, api, stat)
+	r := CreateRouter(uCase, zap.L(), uRep, stat)
 	if r == nil {
 		t.Fatal("not implement http.Handler")
 	}

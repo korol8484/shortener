@@ -4,22 +4,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/korol8484/shortener/internal/app/grpc/service"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/db"
+	grpcHandler "github.com/korol8484/shortener/internal/app/grpc"
 	"github.com/korol8484/shortener/internal/app/handlers"
-	"github.com/korol8484/shortener/internal/app/handlers/middleware"
 	"github.com/korol8484/shortener/internal/app/logger"
 	dbstore "github.com/korol8484/shortener/internal/app/storage/db"
 	"github.com/korol8484/shortener/internal/app/storage/file"
 	"github.com/korol8484/shortener/internal/app/storage/memory"
+	"github.com/korol8484/shortener/internal/app/usecase"
 	userDBStore "github.com/korol8484/shortener/internal/app/user/storage"
 )
 
@@ -48,76 +54,77 @@ func main() {
 		_ = zLog.Sync()
 	}(zLog)
 
-	if err = run(cfg, zLog); err != nil {
-		if !errors.Is(err, http.ErrServerClosed) {
+	if cfg.Grpc {
+		if err = runGRPC(cfg, zLog); err != nil {
 			zLog.Fatal("can't run application", zap.Error(err))
 		}
+	} else {
+		if err = runHTTP(cfg, zLog); err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				zLog.Fatal("can't run application", zap.Error(err))
+			}
 
-		zLog.Info("Application shutdown")
+			zLog.Info("Application shutdown")
+		}
 	}
 }
 
-func run(cfg *config.App, log *zap.Logger) error {
-	var store handlers.Store
-	var err error
-	var pingable handlers.Pingable
-	var jwtUserRep middleware.UserAddRepository
+func runGRPC(cfg *config.App, log *zap.Logger) error {
+	//l := strings.SplitN(cfg.Listen, ":", 2)
+	//if len(l) != 2 {
+	//	return fmt.Errorf("can't parse listen string: %s", cfg.Listen)
+	//}
 
-	if cfg.DBDsn != "" {
-		dbConn, dbErr := db.NewPgDB(cfg)
-		if dbErr != nil {
-			return dbErr
-		}
-
-		pingable = dbConn
-
-		jwtUserRep, err = userDBStore.NewStorage(dbConn)
-		if err != nil {
-			return err
-		}
-
-		store, err = dbstore.NewStorage(dbConn)
-		if err != nil {
-			return err
-		}
-	} else if cfg.FileStoragePath != "" {
-		store, err = file.NewFileStore(cfg, memory.NewMemStore())
-		if err != nil {
-			return err
-		}
-
-		jwtUserRep = userDBStore.NewMemoryStore()
-
-		defer func(store handlers.Store) {
-			_ = store.Close()
-		}(store)
-	} else {
-		jwtUserRep = userDBStore.NewMemoryStore()
-		store = memory.NewMemStore()
-	}
-
-	if pingable == nil {
-		pingable = handlers.NewPingDummy()
-	}
-
-	dh, err := handlers.NewDelete(store, log)
+	uCase, jwtUserRep, err := baseInit(cfg, log)
 	if err != nil {
 		return err
 	}
-	defer dh.Close()
+	defer uCase.Close()
 
-	stats, err := handlers.NewStats(cfg, log, store)
+	listener, err := net.Listen("tcp", cfg.Listen)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Build version: %s\n", BuildVersion)
-	fmt.Printf("Build date: %s\n", BuildDate)
-	fmt.Printf("Build commit: %s\n", BuildCommit)
+	gOpts := []grpc.ServerOption{
+		grpc.ChainUnaryInterceptor(
+			logging.UnaryServerInterceptor(interceptorLogger(log)),
+			grpcHandler.JwtInterceptor(usecase.NewJwt(jwtUserRep, log, "1234567891")),
+			grpcHandler.IpInterceptor(cfg.TrustedSubnet, []string{"/service.Internal/Stats"}),
+		),
+	}
+
+	if cfg.HTTPS.Enable {
+		creds, tlsErr := credentials.NewServerTLSFromFile(cfg.HTTPS.Pem, cfg.HTTPS.Key)
+		if tlsErr != nil {
+			return tlsErr
+		}
+
+		gOpts = append(gOpts, grpc.Creds(creds))
+	}
+
+	s := grpc.NewServer(gOpts...)
+	h := grpcHandler.NewHandler(uCase)
+	service.RegisterInternalServer(s, h)
+
+	return s.Serve(listener)
+}
+
+func runHTTP(cfg *config.App, log *zap.Logger) error {
+	uCase, jwtUserRep, err := baseInit(cfg, log)
+	if err != nil {
+		return err
+	}
+	defer uCase.Close()
+
+	stats, err := handlers.NewStats(cfg, log, uCase)
+	if err != nil {
+		return err
+	}
 
 	server := &http.Server{
 		Addr:    cfg.Listen,
-		Handler: handlers.CreateRouter(store, cfg, log, pingable, jwtUserRep, dh, stats),
+		Handler: handlers.CreateRouter(uCase, log, jwtUserRep, stats),
 	}
 
 	oss, stop, errCh := make(chan os.Signal, 1), make(chan struct{}, 1), make(chan error, 1)
@@ -163,4 +170,94 @@ func run(cfg *config.App, log *zap.Logger) error {
 			return nil
 		}
 	}
+}
+
+func baseInit(cfg *config.App, log *zap.Logger) (*usecase.Usecase, usecase.UserAddRepository, error) {
+	var store usecase.Store
+	var err error
+	var pingable usecase.Pingable
+	var jwtUserRep usecase.UserAddRepository
+
+	if cfg.DBDsn != "" {
+		dbConn, dbErr := db.NewPgDB(cfg)
+		if dbErr != nil {
+			return nil, nil, dbErr
+		}
+
+		pingable = dbConn
+
+		jwtUserRep, err = userDBStore.NewStorage(dbConn)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		store, err = dbstore.NewStorage(dbConn)
+		if err != nil {
+			return nil, nil, err
+		}
+	} else if cfg.FileStoragePath != "" {
+		store, err = file.NewFileStore(cfg, memory.NewMemStore())
+		if err != nil {
+			return nil, nil, err
+		}
+
+		jwtUserRep = userDBStore.NewMemoryStore()
+	} else {
+		jwtUserRep = userDBStore.NewMemoryStore()
+		store = memory.NewMemStore()
+	}
+
+	if pingable == nil {
+		pingable = usecase.NewPingDummy()
+	}
+
+	uCase := usecase.NewUsecase(
+		cfg,
+		store,
+		pingable,
+		log,
+	)
+
+	fmt.Printf("Build version: %s\n", BuildVersion)
+	fmt.Printf("Build date: %s\n", BuildDate)
+	fmt.Printf("Build commit: %s\n", BuildCommit)
+
+	return uCase, jwtUserRep, nil
+}
+
+func interceptorLogger(l *zap.Logger) logging.Logger {
+	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
+		f := make([]zap.Field, 0, len(fields)/2)
+
+		for i := 0; i < len(fields); i += 2 {
+			key := fields[i]
+			value := fields[i+1]
+
+			switch v := value.(type) {
+			case string:
+				f = append(f, zap.String(key.(string), v))
+			case int:
+				f = append(f, zap.Int(key.(string), v))
+			case bool:
+				f = append(f, zap.Bool(key.(string), v))
+			default:
+				f = append(f, zap.Any(key.(string), v))
+			}
+		}
+
+		logger := l.WithOptions(zap.AddCallerSkip(1)).With(f...)
+
+		switch lvl {
+		case logging.LevelDebug:
+			logger.Debug(msg)
+		case logging.LevelInfo:
+			logger.Info(msg)
+		case logging.LevelWarn:
+			logger.Warn(msg)
+		case logging.LevelError:
+			logger.Error(msg)
+		default:
+			panic(fmt.Sprintf("unknown level %v", lvl))
+		}
+	})
 }

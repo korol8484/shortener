@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/korol8484/shortener/internal/app/usecase"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/korol8484/shortener/internal/app/domain"
-	"github.com/korol8484/shortener/internal/app/handlers"
 	"github.com/korol8484/shortener/internal/app/storage"
 )
 
@@ -33,11 +33,11 @@ type storeEntity struct {
 type Store struct {
 	mu        sync.RWMutex
 	file      *os.File
-	baseStore handlers.Store
+	baseStore usecase.Store
 }
 
 // NewFileStore - file storage factory
-func NewFileStore(config Config, base handlers.Store) (*Store, error) {
+func NewFileStore(config Config, base usecase.Store) (*Store, error) {
 	file, err := create(config.GetStoragePath())
 	if err != nil {
 		return nil, err
@@ -121,11 +121,6 @@ func (f *Store) ReadUserURL(ctx context.Context, user *domain.User) (domain.Batc
 // Read - read shorten URL
 func (f *Store) Read(ctx context.Context, alias string) (*domain.URL, error) {
 	return f.baseStore.Read(ctx, alias)
-}
-
-// ReadByURL read shorten URL by URL
-func (f *Store) ReadByURL(ctx context.Context, URL string) (*domain.URL, error) {
-	return f.baseStore.ReadByURL(ctx, URL)
 }
 
 // BatchDelete delete shorten collection URL

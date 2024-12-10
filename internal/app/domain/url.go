@@ -9,3 +9,8 @@ type URL struct {
 
 // BatchURL Base collection struct for app domain
 type BatchURL []*URL
+
+// FormatAlias - format alias
+func (u *URL) FormatAlias(f func(alias string) string) string {
+	return f(u.Alias)
+}
