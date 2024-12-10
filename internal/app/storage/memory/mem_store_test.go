@@ -148,3 +148,21 @@ func TestMemStore_BatchDelete(t *testing.T) {
 	assert.Equal(t, "7A2S4z", userURL[0].Alias)
 	assert.Equal(t, true, userURL[0].Deleted)
 }
+
+func TestMemStore_LoadStats(t *testing.T) {
+	store := NewMemStore()
+	defer func(store usecase.Store) {
+		_ = store.Close()
+	}(store)
+
+	user := &domain.User{ID: 1}
+
+	err := store.Add(context.Background(), &domain.URL{URL: "http://www.ya.ru", Alias: "7A2S4z"}, user)
+	require.NoError(t, err)
+
+	stat, err := store.LoadStats(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, stat.Urls, int64(1))
+	assert.Equal(t, stat.Users, int64(1))
+}

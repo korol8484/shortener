@@ -26,3 +26,8 @@ func TestJwt_CreateNewTokenErr(t *testing.T) {
 	_, err := jwt.LoadClaims("1234")
 	require.Error(t, err)
 }
+
+func TestJwt_GetTokenName(t *testing.T) {
+	jwt := NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+	assert.Equal(t, jwt.GetTokenName(), "Authorization")
+}

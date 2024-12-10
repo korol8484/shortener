@@ -149,6 +149,21 @@ func TestStorage_AddBatch(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestStorage_LoadStats(t *testing.T) {
+	mock.ExpectQuery("SELECT count").
+		//WithArgs("alias").
+		WillReturnRows(
+			sqlmock.NewRows([]string{"urls", "users"}).
+				AddRow(1, 1),
+		)
+
+	stat, err := store.LoadStats(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, stat.Urls, int64(1))
+	assert.Equal(t, stat.Users, int64(1))
+}
+
 func TestStorage_Close(t *testing.T) {
 	cDB, CMock, err := sqlmock.New()
 	require.NoError(t, err)

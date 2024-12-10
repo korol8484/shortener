@@ -217,3 +217,23 @@ func Test_load(t *testing.T) {
 	err = store.Close()
 	require.NoError(t, err)
 }
+
+func TestStore_LoadStats(t *testing.T) {
+	store, dPath := getStore(t)
+
+	defer func() {
+		_ = store.Close()
+		_ = os.Remove(dPath)
+	}()
+
+	user := &domain.User{ID: 1}
+
+	err := store.Add(context.Background(), &domain.URL{URL: "http://www.ya.ru", Alias: "7A2S4z"}, user)
+	require.NoError(t, err)
+
+	stat, err := store.LoadStats(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, stat.Urls, int64(1))
+	assert.Equal(t, stat.Users, int64(1))
+}
