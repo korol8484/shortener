@@ -99,7 +99,7 @@ func (h *Handler) UserURL(ctx context.Context, in *empty.Empty) (*contract.Respo
 		return nil, status.Errorf(codes.Internal, "bad request")
 	}
 
-	list, err := h.usecase.LoadAllUserUrl(ctx, userID)
+	list, err := h.usecase.LoadAllUserURL(ctx, userID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "bad request")
 	}

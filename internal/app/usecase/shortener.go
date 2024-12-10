@@ -95,8 +95,8 @@ func (u *Usecase) LoadByAlias(ctx context.Context, alias string) (*domain.URL, e
 	return u.store.Read(ctx, alias)
 }
 
-// LoadAllUserUrl load all url by user
-func (u *Usecase) LoadAllUserUrl(ctx context.Context, userID int64) (domain.BatchURL, error) {
+// LoadAllUserURL load all url by user
+func (u *Usecase) LoadAllUserURL(ctx context.Context, userID int64) (domain.BatchURL, error) {
 	return u.store.ReadUserURL(ctx, &domain.User{ID: userID})
 }
 
@@ -112,7 +112,7 @@ func (u *Usecase) AddBatch(ctx context.Context, batch domain.BatchURL, userID in
 
 // FormatAlias add to alias base short url
 func (u *Usecase) FormatAlias(URL *domain.URL) string {
-	return URL.FormatAlias(util.AddUrlToAlias(u.cfg.GetBaseShortURL()))
+	return URL.FormatAlias(util.AddURLToAlias(u.cfg.GetBaseShortURL()))
 }
 
 // GenerateURL generate short alias by url

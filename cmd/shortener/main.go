@@ -90,7 +90,7 @@ func runGRPC(cfg *config.App, log *zap.Logger) error {
 		grpc.ChainUnaryInterceptor(
 			logging.UnaryServerInterceptor(interceptorLogger(log)),
 			grpcHandler.JwtInterceptor(usecase.NewJwt(jwtUserRep, log, "1234567891")),
-			grpcHandler.IpInterceptor(cfg.TrustedSubnet, []string{"/service.Internal/Stats"}),
+			grpcHandler.IPInterceptor(cfg.TrustedSubnet, []string{"/service.Internal/Stats"}),
 		),
 	}
 

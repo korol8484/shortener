@@ -47,7 +47,7 @@ func JwtInterceptor(jwt *usecase.Jwt) grpc.UnaryServerInterceptor {
 	}
 }
 
-func IpInterceptor(CIDR string, methods []string) grpc.UnaryServerInterceptor {
+func IPInterceptor(CIDR string, methods []string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		if !slices.Contains(methods, info.FullMethod) {
 			return handler(ctx, req)

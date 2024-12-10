@@ -26,7 +26,7 @@ func (a *API) UserURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	batch, err := a.usecase.LoadAllUserUrl(r.Context(), userID)
+	batch, err := a.usecase.LoadAllUserURL(r.Context(), userID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
