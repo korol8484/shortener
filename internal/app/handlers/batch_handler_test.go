@@ -26,15 +26,9 @@ func TestAPI_ShortenBatch(t *testing.T) {
 	j := middleware.NewJwt(usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123"), zap.L())
 	router.Use(j.HandlerSet())
 
-	store := memory.NewMemStore()
-
-	defer func(store usecase.Store) {
-		_ = store.Close()
-	}(store)
-
 	uCase := usecase.NewUsecase(
 		&config.App{BaseShortURL: srv.URL},
-		store,
+		memory.NewMemStore(),
 		usecase.NewPingDummy(),
 		zap.L(),
 	)

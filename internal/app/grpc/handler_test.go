@@ -124,6 +124,9 @@ func TestHandler_HandleShortNotUser(t *testing.T) {
 	}})
 	require.Error(t, err)
 
+	_, err = client.BatchDelete(context.Background(), &contract.RequestBatchDelete{Alias: []string{"111"}})
+	require.Error(t, err)
+
 	_, err = client.UserURL(context.Background(), &empty.Empty{})
 	require.Error(t, err)
 }
@@ -148,4 +151,12 @@ func TestHandler_HandleBatch(t *testing.T) {
 		},
 	}})
 	require.Error(t, err)
+}
+
+func TestHandler_BatchDelete(t *testing.T) {
+	client, closer := server(true)
+	defer closer()
+
+	_, err := client.BatchDelete(context.Background(), &contract.RequestBatchDelete{Alias: []string{"111"}})
+	require.NoError(t, err)
 }

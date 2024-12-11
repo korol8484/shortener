@@ -59,3 +59,34 @@ func TestAPI_UserURL(t *testing.T) {
 	defer res.Body.Close()
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 }
+
+func TestAPI_UserURL1(t *testing.T) {
+	router := chi.NewRouter()
+	srv := httptest.NewServer(router)
+	defer srv.Close()
+
+	j := middleware.NewJwt(usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123"), zap.L())
+	router.Use(j.HandlerSet(), middleware.LoggRequest(zap.L()), middleware.LoggResponse(zap.L()))
+
+	store := memory.NewMemStore()
+	uCase := usecase.NewUsecase(
+		&config.App{BaseShortURL: srv.URL},
+		store,
+		usecase.NewPingDummy(),
+		zap.L(),
+	)
+	defer uCase.Close()
+
+	api := NewAPI(uCase)
+	router.Get("/user", api.UserURL)
+
+	req, err := http.NewRequest("GET", srv.URL+"/user", nil)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	defer res.Body.Close()
+	assert.Equal(t, http.StatusNoContent, res.StatusCode)
+}

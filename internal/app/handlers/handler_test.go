@@ -265,3 +265,57 @@ func TestAPI_ShortenJson(t *testing.T) {
 		})
 	}
 }
+
+func TestHandleNotUser(t *testing.T) {
+	router := chi.NewRouter()
+	srv := httptest.NewServer(router)
+	defer srv.Close()
+
+	j := middleware.NewJwt(usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123"), zap.L())
+	router.Use(j.HandlerRead())
+
+	uCase := usecase.NewUsecase(
+		&config.App{BaseShortURL: srv.URL},
+		memory.NewMemStore(),
+		usecase.NewPingDummy(),
+		zap.L(),
+	)
+	defer uCase.Close()
+
+	api := NewAPI(uCase)
+	router.Post("/batch", api.ShortenBatch)
+	router.Post("/json", api.ShortenJSON)
+	router.Post("/user", api.UserURL)
+	router.Post("/delete", api.BatchDelete)
+
+	client := &http.Client{}
+
+	requestErr(t, client, "POST", srv.URL+"/batch", "")
+	requestErr(t, client, "POST", srv.URL+"/batch", "1234")
+
+	requestErr(t, client, "POST", srv.URL+"/json", "")
+	requestErr(t, client, "POST", srv.URL+"/json", "1234")
+
+	requestErr(t, client, "POST", srv.URL+"/user", "")
+	requestErr(t, client, "POST", srv.URL+"/user", "1234")
+
+	requestErr(t, client, "POST", srv.URL+"/delete", "")
+	requestErr(t, client, "POST", srv.URL+"/delete", "1234")
+}
+
+func requestErr(t *testing.T, client *http.Client, method string, URL string, token string) {
+	req, err := http.NewRequest(method, URL, nil)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	if token != "" {
+		req.Header.Set("Authorization", token)
+	}
+
+	res, err := client.Do(req)
+	require.NoError(t, err)
+
+	defer res.Body.Close()
+
+	assert.Equal(t, res.StatusCode, 401)
+}

@@ -117,7 +117,14 @@ func (h *Handler) UserURL(ctx context.Context, in *empty.Empty) (*contract.Respo
 
 // BatchDelete handler for a collection of delete user shorten URLs
 func (h *Handler) BatchDelete(ctx context.Context, in *contract.RequestBatchDelete) (*empty.Empty, error) {
-	return nil, nil
+	userID, ok := util.ReadUserIDFromCtx(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "bad request")
+	}
+
+	h.usecase.AddToDelete(in.GetAlias(), userID)
+
+	return &empty.Empty{}, nil
 }
 
 // Stats - return service statistic
