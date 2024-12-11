@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
 	"log"
 	"net"
@@ -104,6 +105,52 @@ func TestHandler_HandleShort(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestJwtOk(t *testing.T) {
+	client, closer := server(true)
+	defer closer()
+
+	jw := usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "1234567891")
+	_, token, err := jw.CreateNewToken(context.Background())
+	require.NoError(t, err)
+
+	md := metadata.New(map[string]string{jw.GetTokenName(): token})
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+
+	_, err = client.HandleShort(ctx, &contract.RequestShort{
+		Data: "http://ya.ru",
+	})
+	require.NoError(t, err)
+
+	_, err = client.HandleGet(ctx, &contract.RequestFindByAlias{Alias: "zVFF0J"})
+	require.NoError(t, err)
+
+	_, err = client.UserURL(ctx, &empty.Empty{})
+	require.NoError(t, err)
+}
+
+func TestJwtErr(t *testing.T) {
+	client, closer := server(true)
+	defer closer()
+
+	jw := usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+	_, token, err := jw.CreateNewToken(context.Background())
+	require.NoError(t, err)
+
+	md := metadata.New(map[string]string{jw.GetTokenName(): token})
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+
+	_, err = client.HandleShort(ctx, &contract.RequestShort{
+		Data: "http://ya.ru",
+	})
+	require.Error(t, err)
+
+	_, err = client.HandleGet(ctx, &contract.RequestFindByAlias{Alias: "zVFF0J"})
+	require.Error(t, err)
+
+	_, err = client.UserURL(ctx, &empty.Empty{})
+	require.Error(t, err)
+}
+
 func TestHandler_HandleShortNotUser(t *testing.T) {
 	client, closer := server(false)
 	defer closer()
@@ -159,4 +206,23 @@ func TestHandler_BatchDelete(t *testing.T) {
 
 	_, err := client.BatchDelete(context.Background(), &contract.RequestBatchDelete{Alias: []string{"111"}})
 	require.NoError(t, err)
+}
+
+func TestHandler_Stats(t *testing.T) {
+	client, closer := server(true)
+	defer closer()
+
+	md := metadata.New(map[string]string{"x-real-ip": "127.0.0.2"})
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+
+	st, err := client.Stats(ctx, nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, st.Users, int64(0))
+	assert.Equal(t, st.Urls, int64(0))
+
+	md = metadata.New(map[string]string{"x-real-ip": "128.0.0.2"})
+	ctx = metadata.NewOutgoingContext(context.Background(), md)
+	_, err = client.Stats(ctx, nil)
+	require.Error(t, err)
 }
