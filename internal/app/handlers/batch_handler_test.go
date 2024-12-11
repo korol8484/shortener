@@ -14,6 +14,7 @@ import (
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/handlers/middleware"
 	"github.com/korol8484/shortener/internal/app/storage/memory"
+	"github.com/korol8484/shortener/internal/app/usecase"
 	"github.com/korol8484/shortener/internal/app/user/storage"
 )
 
@@ -22,16 +23,18 @@ func TestAPI_ShortenBatch(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	j := middleware.NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+	j := middleware.NewJwt(usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123"), zap.L())
 	router.Use(j.HandlerSet())
 
-	store := memory.NewMemStore()
+	uCase := usecase.NewUsecase(
+		&config.App{BaseShortURL: srv.URL},
+		memory.NewMemStore(),
+		usecase.NewPingDummy(),
+		zap.L(),
+	)
+	defer uCase.Close()
 
-	defer func(store Store) {
-		_ = store.Close()
-	}(store)
-
-	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
+	api := NewAPI(uCase)
 	router.Post("/batch", api.ShortenBatch)
 
 	client := &http.Client{}

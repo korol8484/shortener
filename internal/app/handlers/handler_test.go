@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"github.com/korol8484/shortener/internal/app/usecase"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -54,16 +55,24 @@ func TestAPI_HandleShort(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	j := middleware.NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+	j := middleware.NewJwt(usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123"), zap.L())
 	router.Use(j.HandlerSet())
 
 	store := memory.NewMemStore()
 
-	defer func(store Store) {
+	defer func(store usecase.Store) {
 		_ = store.Close()
 	}(store)
 
-	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
+	uCase := usecase.NewUsecase(
+		&config.App{BaseShortURL: srv.URL},
+		store,
+		usecase.NewPingDummy(),
+		zap.L(),
+	)
+	defer uCase.Close()
+
+	api := NewAPI(uCase)
 	router.Post("/", api.HandleShort)
 
 	client := &http.Client{}
@@ -93,15 +102,22 @@ func TestAPI_HandleRedirect(t *testing.T) {
 	defer srv.Close()
 
 	store := memory.NewMemStore()
-
-	defer func(store Store) {
+	defer func(store usecase.Store) {
 		_ = store.Close()
 	}(store)
 
-	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
+	uCase := usecase.NewUsecase(
+		&config.App{BaseShortURL: srv.URL},
+		store,
+		usecase.NewPingDummy(),
+		zap.L(),
+	)
+	defer uCase.Close()
+
+	api := NewAPI(uCase)
 	router.Get("/{id}", api.HandleRedirect)
 
-	err := api.store.Add(context.Background(), &domain.URL{
+	err := store.Add(context.Background(), &domain.URL{
 		URL:   "http://www.ya.ru",
 		Alias: "7A2S4z",
 	}, &domain.User{ID: 1})
@@ -177,16 +193,23 @@ func TestAPI_ShortenJson(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	j := middleware.NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+	j := middleware.NewJwt(usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123"), zap.L())
 	router.Use(j.HandlerSet())
 
 	store := memory.NewMemStore()
-
-	defer func(store Store) {
+	defer func(store usecase.Store) {
 		_ = store.Close()
 	}(store)
 
-	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
+	uCase := usecase.NewUsecase(
+		&config.App{BaseShortURL: srv.URL},
+		store,
+		usecase.NewPingDummy(),
+		zap.L(),
+	)
+	defer uCase.Close()
+
+	api := NewAPI(uCase)
 	router.Post("/json", api.ShortenJSON)
 
 	client := &http.Client{}
@@ -243,15 +266,56 @@ func TestAPI_ShortenJson(t *testing.T) {
 	}
 }
 
-func TestGenAlias(t *testing.T) {
-	alias := GenAlias(6, "testString")
-	if alias != "Jlf8iW" {
-		t.Fatal("invalid alias generated")
-	}
+func TestHandleNotUser(t *testing.T) {
+	router := chi.NewRouter()
+	srv := httptest.NewServer(router)
+	defer srv.Close()
+
+	j := middleware.NewJwt(usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123"), zap.L())
+	router.Use(j.HandlerRead())
+
+	uCase := usecase.NewUsecase(
+		&config.App{BaseShortURL: srv.URL},
+		memory.NewMemStore(),
+		usecase.NewPingDummy(),
+		zap.L(),
+	)
+	defer uCase.Close()
+
+	api := NewAPI(uCase)
+	router.Post("/batch", api.ShortenBatch)
+	router.Post("/json", api.ShortenJSON)
+	router.Post("/user", api.UserURL)
+	router.Post("/delete", api.BatchDelete)
+
+	client := &http.Client{}
+
+	requestErr(t, client, "POST", srv.URL+"/batch", "")
+	requestErr(t, client, "POST", srv.URL+"/batch", "1234")
+
+	requestErr(t, client, "POST", srv.URL+"/json", "")
+	requestErr(t, client, "POST", srv.URL+"/json", "1234")
+
+	requestErr(t, client, "POST", srv.URL+"/user", "")
+	requestErr(t, client, "POST", srv.URL+"/user", "1234")
+
+	requestErr(t, client, "POST", srv.URL+"/delete", "")
+	requestErr(t, client, "POST", srv.URL+"/delete", "1234")
 }
 
-func BenchmarkGenAlias(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		GenAlias(5, "https://ya.ru")
+func requestErr(t *testing.T, client *http.Client, method string, URL string, token string) {
+	req, err := http.NewRequest(method, URL, nil)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	if token != "" {
+		req.Header.Set("Authorization", token)
 	}
+
+	res, err := client.Do(req)
+	require.NoError(t, err)
+
+	defer res.Body.Close()
+
+	assert.Equal(t, res.StatusCode, 401)
 }

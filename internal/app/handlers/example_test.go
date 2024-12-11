@@ -13,6 +13,7 @@ import (
 	"github.com/korol8484/shortener/internal/app/config"
 	"github.com/korol8484/shortener/internal/app/handlers/middleware"
 	"github.com/korol8484/shortener/internal/app/storage/memory"
+	"github.com/korol8484/shortener/internal/app/usecase"
 	"github.com/korol8484/shortener/internal/app/user/storage"
 )
 
@@ -25,30 +26,32 @@ func Example() {
 	defer srv.Close()
 
 	// Create JWT midelware for auth user
-	j := middleware.NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+	j := middleware.NewJwt(usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123"), zap.L())
 	router.Use(j.HandlerSet())
 
 	// Create short URL storage
 	store := memory.NewMemStore()
 
-	defer func(store Store) {
+	defer func(store usecase.Store) {
 		_ = store.Close()
 	}(store)
 
-	// Create API Handlers
-	api := NewAPI(store, &config.App{BaseShortURL: srv.URL})
-	apiDelete, err := NewDelete(store, zap.L())
-	if err != nil {
-		log.Fatal(err)
-	}
+	uCase := usecase.NewUsecase(
+		&config.App{BaseShortURL: srv.URL},
+		store,
+		usecase.NewPingDummy(),
+		zap.L(),
+	)
+	defer uCase.Close()
 
-	defer apiDelete.Close()
+	// Create API Handlers
+	api := NewAPI(uCase)
 
 	// Register handlers in router
 	router.Post("/", api.HandleShort)
 	router.Get("/{id}", api.HandleRedirect)
 	router.Post("/json", api.ShortenJSON)
-	router.Delete("/batch", apiDelete.BatchDelete)
+	router.Delete("/batch", api.BatchDelete)
 	router.Post("/batch", api.ShortenBatch)
 
 	// Example clients request

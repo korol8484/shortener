@@ -2,10 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
-	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/user/util"
 )
 
@@ -28,9 +26,7 @@ func (a *API) UserURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	batch, err := a.store.ReadUserURL(r.Context(), &domain.User{
-		ID: userID,
-	})
+	batch, err := a.usecase.LoadAllUserURL(r.Context(), userID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -44,7 +40,7 @@ func (a *API) UserURL(w http.ResponseWriter, r *http.Request) {
 	resp := make([]*responseURL, 0, len(batch))
 	for _, u := range batch {
 		resp = append(resp, &responseURL{
-			URL:   fmt.Sprintf("%s/%s", a.cfg.GetBaseShortURL(), u.Alias),
+			URL:   a.usecase.FormatAlias(u),
 			Alias: u.URL,
 		})
 	}

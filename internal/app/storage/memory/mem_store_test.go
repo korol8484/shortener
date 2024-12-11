@@ -2,20 +2,20 @@ package memory
 
 import (
 	"context"
+	"github.com/korol8484/shortener/internal/app/usecase"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/korol8484/shortener/internal/app/domain"
-	"github.com/korol8484/shortener/internal/app/handlers"
 	"github.com/korol8484/shortener/internal/app/storage"
 )
 
 func TestMemStore_Add(t *testing.T) {
 	store := NewMemStore()
 
-	defer func(store handlers.Store) {
+	defer func(store usecase.Store) {
 		_ = store.Close()
 	}(store)
 
@@ -57,7 +57,7 @@ func TestMemStore_Read(t *testing.T) {
 
 	store := NewMemStore()
 
-	defer func(store handlers.Store) {
+	defer func(store usecase.Store) {
 		_ = store.Close()
 	}(store)
 
@@ -104,7 +104,7 @@ func TestMemStore_Read(t *testing.T) {
 
 func TestMemStore_ReadUserURL(t *testing.T) {
 	store := NewMemStore()
-	defer func(store handlers.Store) {
+	defer func(store usecase.Store) {
 		_ = store.Close()
 	}(store)
 
@@ -126,28 +126,9 @@ func TestMemStore_ReadUserURL(t *testing.T) {
 	require.Len(t, userURL, 0)
 }
 
-func TestMemStore_ReadByURL(t *testing.T) {
-	store := NewMemStore()
-	defer func(store handlers.Store) {
-		_ = store.Close()
-	}(store)
-
-	err := store.Add(context.Background(), &domain.URL{URL: "http://www.ya.ru", Alias: "7A2S4z"}, &domain.User{ID: 1})
-	require.NoError(t, err)
-
-	URL, err := store.ReadByURL(context.Background(), "http://www.ya.ru")
-	require.NoError(t, err)
-
-	assert.Equal(t, "http://www.ya.ru", URL.URL)
-	assert.Equal(t, "7A2S4z", URL.Alias)
-
-	_, err = store.ReadByURL(context.Background(), "http://www.ya1.ru")
-	require.ErrorIs(t, err, storage.ErrNotFound)
-}
-
 func TestMemStore_BatchDelete(t *testing.T) {
 	store := NewMemStore()
-	defer func(store handlers.Store) {
+	defer func(store usecase.Store) {
 		_ = store.Close()
 	}(store)
 
@@ -166,4 +147,22 @@ func TestMemStore_BatchDelete(t *testing.T) {
 	assert.Equal(t, "http://www.ya.ru", userURL[0].URL)
 	assert.Equal(t, "7A2S4z", userURL[0].Alias)
 	assert.Equal(t, true, userURL[0].Deleted)
+}
+
+func TestMemStore_LoadStats(t *testing.T) {
+	store := NewMemStore()
+	defer func(store usecase.Store) {
+		_ = store.Close()
+	}(store)
+
+	user := &domain.User{ID: 1}
+
+	err := store.Add(context.Background(), &domain.URL{URL: "http://www.ya.ru", Alias: "7A2S4z"}, user)
+	require.NoError(t, err)
+
+	stat, err := store.LoadStats(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, stat.Urls, int64(1))
+	assert.Equal(t, stat.Users, int64(1))
 }

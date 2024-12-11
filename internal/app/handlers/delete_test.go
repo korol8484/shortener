@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"github.com/korol8484/shortener/internal/app/config"
+	"github.com/korol8484/shortener/internal/app/usecase"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -23,7 +25,7 @@ func TestDelete_BatchDelete(t *testing.T) {
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
-	j := middleware.NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+	j := middleware.NewJwt(usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123"), zap.L())
 	router.Use(j.HandlerSet())
 
 	store := memory.NewMemStore()
@@ -33,13 +35,19 @@ func TestDelete_BatchDelete(t *testing.T) {
 	}, &domain.User{ID: 1})
 	require.NoError(t, err)
 
-	defer func(store Store) {
+	defer func(store usecase.Store) {
 		_ = store.Close()
 	}(store)
 
-	api, err := NewDelete(store, zap.L())
-	require.NoError(t, err)
-	defer api.Close()
+	uCase := usecase.NewUsecase(
+		&config.App{BaseShortURL: srv.URL},
+		store,
+		usecase.NewPingDummy(),
+		zap.L(),
+	)
+	defer uCase.Close()
+
+	api := NewAPI(uCase)
 
 	router.Delete("/batch", api.BatchDelete)
 

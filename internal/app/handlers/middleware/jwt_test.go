@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"context"
+	"github.com/korol8484/shortener/internal/app/usecase"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -9,14 +11,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
-	"github.com/korol8484/shortener/internal/app/domain"
 	"github.com/korol8484/shortener/internal/app/user/storage"
 )
 
 func TestSample(t *testing.T) {
 	r := chi.NewRouter()
 
-	j := NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+	uc := usecase.NewJwt(storage.NewMemoryStore(), zap.L(), "123")
+
+	j := NewJwt(uc, zap.L())
 	r.Use(j.HandlerSet(), j.HandlerRead())
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -36,12 +39,12 @@ func TestSample(t *testing.T) {
 		t.Fatal(resp)
 	}
 
-	jw, err := j.buildJWTString(&domain.User{ID: 1})
+	_, token, err := uc.CreateNewToken(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	h.Set("Authorization", "BEARER "+jw)
+	h.Set("Authorization", "BEARER "+token)
 	if status, resp := testRequest(t, ts, "GET", "/", h, nil); status != 200 {
 		t.Fatal(resp)
 	}

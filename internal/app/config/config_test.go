@@ -14,11 +14,13 @@ func TestConfig(t *testing.T) {
 		BaseShortURL:    "testBase",
 		FileStoragePath: "fileStore",
 		DBDsn:           "dbDsn",
+		TrustedSubnet:   "subnet",
 	}
 
 	assert.Equal(t, "dbDsn", cfg.GetDsn())
 	assert.Equal(t, "fileStore", cfg.GetStoragePath())
 	assert.Equal(t, "testBase", cfg.GetBaseShortURL())
+	assert.Equal(t, "subnet", cfg.GetTrustedSubnet())
 }
 
 func TestNewConfig(t *testing.T) {

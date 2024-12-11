@@ -110,22 +110,6 @@ func TestStorage_Read(t *testing.T) {
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
-func TestStorage_ReadByURL(t *testing.T) {
-	mock.ExpectQuery("SELECT t.url, t.alias FROM shortener t").
-		WithArgs("http://ya.ru").
-		WillReturnRows(
-			sqlmock.NewRows([]string{"url", "alias"}).
-				AddRow("http://ya.ru", "alias"),
-		)
-
-	url, err := store.ReadByURL(context.Background(), "http://ya.ru")
-	require.NoError(t, err)
-
-	assert.Equal(t, "http://ya.ru", url.URL)
-	assert.Equal(t, "alias", url.Alias)
-	assert.False(t, url.Deleted)
-}
-
 func TestStorage_ReadUserURL(t *testing.T) {
 	mock.ExpectQuery("SELECT s.url, s.alias FROM shortener s").
 		WithArgs(1).
@@ -163,6 +147,21 @@ func TestStorage_AddBatch(t *testing.T) {
 		&domain.URL{URL: "1", Alias: "1"},
 	}, &domain.User{ID: 1})
 	assert.NoError(t, err)
+}
+
+func TestStorage_LoadStats(t *testing.T) {
+	mock.ExpectQuery("SELECT count").
+		//WithArgs("alias").
+		WillReturnRows(
+			sqlmock.NewRows([]string{"urls", "users"}).
+				AddRow(1, 1),
+		)
+
+	stat, err := store.LoadStats(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, stat.Urls, int64(1))
+	assert.Equal(t, stat.Users, int64(1))
 }
 
 func TestStorage_Close(t *testing.T) {

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package service.contract;
+
+option go_package = "github.com/korol8484/shortener/internal/app/grpc/service/contract";
+
+message Batch {
+    string correlation_id = 1;
+    string original_url = 2;
+}
+
+message Url {
+    string short_url = 1;
+    string alias = 2;
+}
